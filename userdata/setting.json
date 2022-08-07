@@ -1,0 +1,39 @@
+{
+	"windowed": true,
+	"resx": 1280,
+	"keys2": {
+		"shoot": 83,
+		"spell": 68,
+		"special": 70,
+		"up": 101,
+		"down": 98,
+		"left": 97,
+		"right": 99,
+		"slow": 65
+	},
+	"vsync": false,
+	"username": "User",
+	"bgmvolume": 100,
+	"locale": "zh_cn",
+	"timezone": 8,
+	"keys": {
+		"shoot": 90,
+		"spell": 88,
+		"special": 67,
+		"up": 38,
+		"down": 40,
+		"left": 37,
+		"right": 39,
+		"slow": 16
+	},
+	"keysys": {
+		"snapshot": 36,
+		"retry": 82,
+		"repfast": 17,
+		"repslow": 16,
+		"menu": 27
+	},
+	"sevolume": 100,
+	"mod": "empty",
+	"resy": 720
+}
