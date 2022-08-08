@@ -366,7 +366,7 @@ function M:renderPool(pool,x,y,scale,count,timer)
                     _funcs(render_command,state,char,timer,v)
                 end
             end
-            SetImageState(render_command.img, "", render_command.topcolor,render_command.topcolor,render_command.botcolor,render_command.botcolor)
+            SetImageSubColor(render_command.img, render_command.topcolor,render_command.topcolor,render_command.botcolor,render_command.botcolor)
             Render(render_command.img,render_command.x,render_command.y,render_command.rot,render_command.scale,render_command.scale)
         end
         --PopRenderTarget("BMF_FONT_BUFFER")

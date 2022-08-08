@@ -34,7 +34,7 @@ function bullet:init(img,color)
     local size = __size or 64
     self.res = bullet_style[1]
     self.imgid = img
-    self.color = color 
+    self.color = color
     self.layer = LAYER_ENEMY_BULLET
     self.group = GROUP_ENEMY_BULLET
 end

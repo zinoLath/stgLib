@@ -17,10 +17,14 @@ local state = {
 }
 local pool = BMF:pool(str,state,300)
 test_text = Class(object)
-function test_text:render()
-	SetViewMode("ui")
-	BMF:renderPool(pool,200,200,1,nil,self.timer)
-	SetViewMode("world")
+test_text[".render"] = true
+function test_text:init()
+	self.img = hud_font.chars["c"].sprite
+	self.x = 0; self.y = 0
+	self.layer = LAYER_TOP
+	self._blend = "grad+alpha"
+	self._color = Color(255,255,0,0)
+	self._subcolor = Color(255,0,0,255)
 end
 stage.group.New('menu',{},"Normal",{lifeleft=2,power=100,faith=50000,bomb=3},true,1)
 stage.group.AddStage('Normal','Stage 1@Normal',{lifeleft=7,power=300,faith=50000,bomb=3},true)

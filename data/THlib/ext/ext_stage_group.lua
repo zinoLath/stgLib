@@ -214,7 +214,7 @@ function stage.group.render(self)
         --ui.DrawScore(self)
     end
     SetViewMode 'world'
-    RenderClearViewMode(Color(255, 255, 0, 0))
+    RenderClearViewMode(Color(255, 0, 0, 0))
 end
 
 function stage.group.Start(group)
