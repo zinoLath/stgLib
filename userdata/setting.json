@@ -1,19 +1,16 @@
 {
-	"windowed": true,
-	"resx": 1280,
-	"keys2": {
-		"shoot": 83,
-		"spell": 68,
-		"special": 70,
-		"up": 101,
-		"down": 98,
-		"left": 97,
-		"right": 99,
-		"slow": 65
-	},
 	"vsync": false,
-	"username": "User",
+	"sevolume": 100,
 	"bgmvolume": 100,
+	"mod": "empty",
+	"keysys": {
+		"snapshot": 36,
+		"retry": 82,
+		"repfast": 17,
+		"repslow": 16,
+		"menu": 27
+	},
+	"username": "User",
 	"locale": "zh_cn",
 	"timezone": 8,
 	"keys": {
@@ -26,14 +23,17 @@
 		"right": 39,
 		"slow": 16
 	},
-	"keysys": {
-		"snapshot": 36,
-		"retry": 82,
-		"repfast": 17,
-		"repslow": 16,
-		"menu": 27
+	"keys2": {
+		"shoot": 83,
+		"spell": 68,
+		"special": 70,
+		"up": 101,
+		"down": 98,
+		"left": 97,
+		"right": 99,
+		"slow": 65
 	},
-	"sevolume": 100,
-	"mod": "empty",
+	"windowed": true,
+	"resx": 1280,
 	"resy": 720
 }

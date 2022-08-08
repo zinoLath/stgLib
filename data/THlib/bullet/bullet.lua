@@ -27,28 +27,16 @@ local path = GetCurrentScriptDirectory()
 local sheet_handler = Include(path .. "bullet_sheet.lua")
 local shot_sheet = sheet_handler.parse()
 sheet_handler.optimize_sheet(shot_sheet)
---LoadTexture('bullet1', 'THlib\\bullet\\bullet1.png')
---LoadTexture('bullet2', 'THlib\\bullet\\bullet2.png')
---LoadTexture('bullet3', 'THlib\\bullet\\bullet3.png')
---LoadTexture('bullet4', 'THlib\\bullet\\bullet4.png')
---LoadTexture('bullet5', 'THlib\\bullet\\bullet5.png')
---LoadTexture('bullet6', 'THlib\\bullet\\bullet6.png')
 
 bullet = Class(object)
-function bullet:init(img,color,rm,__size)
+function bullet:init(img,color)
     local bullet_style = shot_sheet.shots[img]
     local size = __size or 64
     self.res = bullet_style[1]
     self.imgid = img
-    self.color = color or color_white
-    self._alpha = self.color.a
+    self.color = color 
     self.layer = LAYER_ENEMY_BULLET
     self.group = GROUP_ENEMY_BULLET
-    local _scale = size/64
-    self._scale = _scale
-    self.a, self.b = bullet_style[2]*_scale, bullet_style[2]*_scale
-    self.hscale, self.vscale = _scale*2.25, _scale*2.25
-    self.dt = 0
 end
 function bullet:frame()
     task.Do(self)

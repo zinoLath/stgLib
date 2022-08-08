@@ -204,7 +204,7 @@ M.tag_funcs.state = {
         state.render_funcs = state.render_funcs or {}
         if tag._attr.color then
             state.color_top = StringToColor(tag._attr.color)
-            state.color_bot = StringToColor(tag._attr.color)
+            state.color_bot = state.color_bot or StringToColor(tag._attr.color)
         end
         if tag._attr.bcolor then
             state.color_bot = StringToColor(tag._attr.bcolor)
@@ -224,7 +224,6 @@ M.tag_funcs.shake = {
     end
 }
 count = 1
---done TODO: PUT STATE ON EACH WORD, OVERWRITE STATES
 local function returnTList(txt,info,state,ret,state_list,cursor)
     state = state or {}
     state_list = state_list or {}
