@@ -1,3 +1,5 @@
+--- WARNING! DEPRECATED IN FAVOR OF lstg.Mesh
+---
 --- Ok so the idea of this is to basically serve as a handler for dnh-like multivertex stuff.
 --- It's a makeshift triangle handler because the actual triangle handler doesn't work the way i need
 --- it's actually also rather performant compared to the standard use of rendertextures, since there's no per-frame
@@ -7,6 +9,7 @@
 --- that contains all the indices also its quads only
 --- REMINDER: X Y Z U V COLOR
 local M = {}
+ZQuads = M
 local mt = {}
 
 function M.new(vcount,icount)

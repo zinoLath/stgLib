@@ -1,97 +1,61 @@
-local M = {  }
-pattern = M
-M.__index = M
+---
+--- Requires: InterpolationHelper.lua, Shape.lua
+---Stop blaming society for all of your problems
+---
+local path = GetCurrentScriptDirectory()
+local ih = Include(path .. "InterpolationHelper.lua")
+local shape = Include(path .. "Shape.lua")
 
 local default_circle = shape.new('circle')
-M.lerp_functions = {}
-function M.lerp_functions.default(a,t)
-    if type(a) ~= "table" then
-        return a
-    else
-        if type(a[1]) == 'userdata' then
-            return Interpolate_ElementColor(a,(t*(#a-1))+1)
-        else
-            return Interpolate_Element(a,(t*(#a-1))+1)
-        end
-    end
-end
-M.lerp_functions.lerp = M.lerp_functions.default
-function M.lerp_functions.lerpint(...)
-    return int(M.lerp_functions.lerp(...))
-end
-function M.lerp_functions.vector(a,t)
-    if a:isVector() then
-        return a
-    else
-        return Vector.list_lerp(a,t/#a)
-    end
-end
-function M.lerp_functions.decide(a,_,t)
-    if type(a) ~= 'table' or (type(a) == 'table' and a[1] == nil) then
-        return a
-    else
-        return wrap_table(a,t,true)
-    end
-end
-function M.lerp_functions.nolerp(a,_,t)
-    return a
-end
 
-M.arg_types = {
-    type = "decide",
-    count = "lerpint",
-    indes = "decide",
-    offset = "vector",
-    rm = "decide",
-    master = "nolerp",
-    shape = "nolerp",
-    class = "nolerp",
-    callback = "nolerp",
-    layer_callback = "nolerp",
-    aim = "nolerp",
+local M = {}
+pattern = M
+M.default_params = {
+    master = Vector(0,0),         --object it will always spawn from
+    radius = 0,           --spawn radius
+    angle = 0,             --base angle
+    spread = 360,         --how much it's spread out (centered)
+    type = "scale",       --the shape of the bullet graphic (can be a table, doing so will loop through the shapes)
+    color = Color(255,255,255,255),     --the color of the bullet (can be a table, doing so will loop through the colors)
+    class = straight_pattern,      --the class of the bullet (for customised behavior)
+    count = 5,             --how many bullets are shot per iteration
+    speed = 1,             --the speed of each iteration (can be a table of 2 numbers, which then the final speed depends on the layer)
+    layer = 1,             --how many bullets are shot per count
+    accel = 0,             --acceleration of the bullets
+    maxv = 1000,
+    gravity = 0,         --gravity of the bullets
+    maxvy = 1000,
+    indes = false,         --if the bullet should be indestructible
+    shape = default_circle,        --the shape of the iteration
+    delay = 0,             --the delay per count
+    layer_delay = 0, --the delay per layer
+    jitter = 0,           --the angle rng per layer shot
+    offset = Vector(0,0),
+    callback = voidfunc,
+    layer_callback = voidfunc,
+    rm = "bul++",
+    visual_delay = 7, --the cloud delay thing
+    omiga = 0,
 }
+M.__index = M
+
 function M:new(params)
     local p = params
     local ret ={}
-    ret.params = {
-        master = Vector(0,0),         --object it will always spawn from
-        radius = 0,           --spawn radius
-        angle = 0,             --base angle
-        spread = 360,         --how much it's spread out (centered)
-        type = "scale",       --the shape of the bullet graphic (can be a table, doing so will loop through the shapes)
-        color = color.Red,     --the color of the bullet (can be a table, doing so will loop through the colors)
-        class = straight_pattern,      --the class of the bullet (for customised behavior)
-        count = 5,             --how many bullets are shot per iteration
-        speed = 1,             --the speed of each iteration (can be a table of 2 numbers, which then the final speed depends on the layer)
-        layer = 1,             --how many bullets are shot per count
-        accel = 0,             --acceleration of the bullets
-        maxv = 1000,
-        gravity = 0,         --gravity of the bullets
-        maxvy = 1000,
-        indes = false,         --if the bullet should be indestructible
-        shape = default_circle,        --the shape of the iteration
-        delay = 0,             --the delay per count
-        layer_delay = 0, --the delay per layer
-        jitter = 0,           --the angle rng per layer shot
-        offset = Vector(0,0),
-        callback = voidfunc,
-        layer_callback = voidfunc,
-        rm = "bul++",
-        visual_delay = 7, --the cloud delay thing
-        omiga = 0,
-    }
+    ret.params = deepcopy(M.default_params)
     table.deploy(ret.params,params)
     ret.arg_types = p.arg_types or self.arg_types
     return setmetatable(ret, self)
 end
+local pattern_buffer = {}
 function M:fire(func)
     local ret = {}
-    local params = {}
-    for l=0,math.round(self.params.layer)-1 do
-        local tl = l/self.params.layer
+    local params = table.clear(pattern_buffer)
+    local rl = math.round(self.params.layer)
+    for l=0, rl do
+        local tl = l/rl
         for k,v in pairs(self.params) do
-            local funcname = self.arg_types[k] or "default"
-            params[k] = self.lerp_functions[funcname](v,tl,l)
+            params[k] = ih.lerp(v)
         end
         for c = 1, params.count do
             local obj
@@ -114,16 +78,17 @@ function M:fire(func)
     end
     return ret
 end
-function M:fireAF()
+
+function M:fireFromParams(sparams)
     local ret = {}
-    local params = {}
-    AdvancedFor(self.params.layer,
-            {"linear", 0, 1, false, math.tween.linear},
-            function(tl,l)
-                --l = l - 1
-        for k,v in pairs(self.params) do
-            local funcname = self.arg_types[k] or "default"
-            params[k] = self.lerp_functions[funcname](v,tl,l)
+    local params = table.clear(pattern_buffer)
+    local actparams = deepcopy(M.default_params)
+    table.deploy(actparams,sparams)
+    local rl = math.round(actparams.layer)
+    for l=0, rl do
+        local tl = l/rl
+        for k,v in pairs(actparams) do
+            params[k] = ih.lerp(v)
         end
         for c = 1, params.count do
             local obj
@@ -133,9 +98,7 @@ function M:fireAF()
             else
                 obj = _func(self,params,l,tl,c)
             end
-            if params.callback and obj then
-                params.callback(obj, params, self)
-            end
+            params.callback(obj, self)
             if params.delay > 0 then
                 task.Wait(int(params.delay+0.5))
             end
@@ -145,49 +108,6 @@ function M:fireAF()
         if params.layer_delay > 0 then
             task.Wait(int(params.layer_delay+0.5))
         end
-    end)
-    return ret
-end
-function M:increaseValue(id,inc)
-    local value = self.params[id]
-    if type(value) == 'number' or (type(value) == 'table' and type(value.x) == 'number') then
-        self.params[id] = self.params[id] + inc
-    else
-        for k,v in ipairs(self.params[id]) do
-            self.params[id][k] = self.params[id][k] + inc
-        end
-    end
-end
-function M:multiplyValue(id,inc)
-    local value = self.params[id]
-    if type(value) == 'number' or (type(value) == 'table' and type(value.x) == 'number') then
-        self.params[id] = self.params[id] * inc
-    else
-        for k,v in ipairs(self.params[id]) do
-            self.params[id][k] = self.params[id][k] * inc
-        end
-    end
-end
-function M:getAverage(id)
-    local value = self.params[id]
-    if type(value) == 'number' then
-        return value
-    else
-        return (math.max(unpack(value))+math.min(unpack(value)))/#value
-    end
-end
-function M:setValue(id,val)
-    self:increaseValue(id,val-self:getAverage(id))
-end
-function M:getValue(id)
-    return self.params[id]
-end
-function M:copy()
-    local ret = M(self)
-    for k,v in pairs(self) do
-        ret[k] = v
     end
     return ret
 end
-setmetatable(M, {__call = M.new})
-return M

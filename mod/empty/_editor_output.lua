@@ -32,7 +32,7 @@ stage.group.DefStageFunc('Stage 1@Normal','init',function(self)
 	item.PlayerInit()
     difficulty=self.group.difficulty    --New(mask_fader,'open')
     --New(reimu_player)
-	New(test_text)
+	New(player_class)
     task.New(self,function()
         do
             -- New(river_background)

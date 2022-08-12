@@ -13,7 +13,8 @@ GROUP_INDES = 5
 GROUP_ITEM = 6
 GROUP_NONTJT = 7
 GROUP_SPELL = 8--由OLC添加，可用于自机bomb
-GROUP_CPLAYER = 9
+GROUP_MENU = 9
+GROUP_CURSOR = 9
 GROUP_ALL = 16
 GROUP_NUM_OF_GROUP = 16
 --层次结构
@@ -91,6 +92,38 @@ function Class(base, define)
     return result
 end
 
+function zclass(base, ...)
+    local arg = {...}
+    base = base or object
+    if (type(base) ~= 'table') or not base.is_class then
+        error('Invalid base class or base class does not exist.')
+    end
+    local result = { 0, 0, 0, 0, 0, 0 }
+    for k,v in pairs(base) do
+        if type(k) ~= "number" then
+            result[k] = deepcopy(v)
+        end
+    end
+    result.is_class = true
+    result.init = base.init
+    result.del = base.del
+    result.frame = base.frame
+    result.render = base.render
+    result.colli = base.colli
+    result.kill = base.kill
+    result.base = base
+    result[".render"] = true
+    for k,define in ipairs(arg) do
+        if type(define) == "table" then
+            for k, v in pairs(define) do
+                result[k] = v
+            end
+        end
+    end
+    table.insert(all_class, result)
+    return result
+end
+
 ---对所有class的回调函数进行整理，给底层调用
 function InitAllClass()
     for _, v in pairs(all_class) do
@@ -110,7 +143,7 @@ function RawDel(o)
     if o then
         o.status = 'del'
         if o._servants then
-            _del_servants(o)
+            DelServants(o)
         end
     end
 end
@@ -119,7 +152,7 @@ function RawKill(o)
     if o then
         o.status = 'kill'
         if o._servants then
-            _kill_servants(o)
+            KillServants(o)
         end
     end
 end

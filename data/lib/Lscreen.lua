@@ -1,8 +1,6 @@
 ---=====================================
 ---luastg screen
 ---=====================================
-local sc_width = 1280
-local sc_height = 720
 local function deepcopy(tb) --copies a table Completely, copying the metatable and the child tables (other ref data types dont get copied)
     local ret = {}
     if getmetatable(tb) then
@@ -36,11 +34,12 @@ function UpdateScreenResources()
     lstg.RenderClear(lstg.Color(255, 255, 255, 255))
     lstg.PopRenderTarget()
 end
-local scwidth, scheight = 1280,720 --screen width and height (coords, not actual resolution)
+local scwidth, scheight = 1920,1080 --screen width and height (coords, not actual resolution)
 local rx, ry = scwidth/2, scheight/2 --stgframe center on the screen
 local ww, wh = 384, 448 --world width and height (stg frame)
 local pw, ph = ww, wh --player bounds (no idea why its different lol)
-local rw, rh = ww*1.5, wh*1.5 --render width and height (the size of the stg frame on the screen)
+local stg_scale = 2.25
+local rw, rh = ww*stg_scale, wh*stg_scale --render width and height (the size of the stg frame on the screen)
 local boundw, boundh = 32, 32 --object deletion box size (stg frame + bound)
 local RAW_DEFAULT_WORLD = {--this one is the "standard" one that will always be the base for everything
     l = -ww/2, r = ww/2, b = -wh/2, t = wh/2,
@@ -63,13 +62,14 @@ screen = {}
 ---@overload fun()
 function ResetScreen(no_reset_world)
     -- 根据横纵比选择坐标系
-    screen.width = sc_width
-    screen.height = sc_height
+    screen.width = scwidth
+    screen.height = scheight
     -- 计算视口位置
     screen.hScale = setting.resx / screen.width
     screen.vScale = setting.resy / screen.height
     screen.resScale = setting.resx / setting.resy
     screen.scale = math.min(screen.hScale, screen.vScale)
+    screen.scalefrom480 = screen.width/480
     if screen.resScale >= (screen.width / screen.height) then
         screen.dx = (setting.resx - screen.scale * screen.width) * 0.5
         screen.dy = 0
@@ -296,8 +296,10 @@ function SetViewMode(mode)
         world.t = offset.centery + (world.setheight / 2) + world.setdy
         --应用参数
         SetRenderRect(world.l, world.r, world.b, world.t, w.scrl, w.scrr, w.scrb, w.scrt)
+        SetImageScale(1/screen.scalefrom480)
     elseif mode == 'ui' then
         SetRenderRect(0, screen.width, 0, screen.height, 0, screen.width, 0, screen.height)
+        SetImageScale(1)
     else
         error('Invalid arguement.')
     end

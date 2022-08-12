@@ -42,10 +42,10 @@ function enemybase:colli(other)
     end
 end
 function enemybase:kill()
-    _kill_servants(self)
+    KillServants(self)
 end
 function enemybase:del()
-    _del_servants(self)
+    DelServants(self)
 end
 function enemybase:render()
     if self.animManager then

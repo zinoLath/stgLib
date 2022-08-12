@@ -1,7 +1,6 @@
 local Interpolate = math.lerp
 local abs = math.abs
 local clamp = math.clamp
-voidfunc = function()  end
 function SetFieldInTime(tb,time,func,...)
     local args = {...}
     for k,v in ipairs(args) do
@@ -170,27 +169,6 @@ end
 function InterpolateAngle(a,b,x)
     local delta = AngleDifference(a,b)
     return a + delta * x
-end
-function deepcopy(tb)
-    local ret = {}
-    if getmetatable(tb) then
-        setmetatable(ret, getmetatable(tb))
-    end
-    for k,v in pairs(tb) do
-        if type(v) ~= "table" then
-            ret[k] = v
-        else
-            ret[k] = deepcopy(v)
-        end
-    end
-    return ret
-end
-function softcopy(tb)
-    local ret = {}
-    for k,v in pairs(tb) do
-        ret[k] = v
-    end
-    return ret
 end
 
 function StorePosition(self,max)

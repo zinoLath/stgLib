@@ -1,15 +1,17 @@
-﻿local path = GetCurrentScriptDirectory()
+﻿--TODO: PORT TO BMFONT ONLY
+
+local path = GetCurrentScriptDirectory()
 LoadImageFromFile("spellnamebg", path.."spellnamebg.png")
 local w,h = GetTextureSize('spellnamebg')
 local cx, cy = 460, 85
 SetImageCenter("spellnamebg",cx,cy)
 local cutin_font_default = LoadTTF("cutin_font",path.."Philosopher-Bold.ttf",40)
-cutin_font_default:setHAlign(2):setVAlign(1):enableOutline(color.Black,5)
+--cutin_font_default:setHAlign(2):setVAlign(1):enableOutline(color.Black,5)
 local history_font_default = LoadTTF("history_font",path.."unispace.ttf",25)
-history_font_default:setHAlign(2):setVAlign(0):enableOutline(color.Black,2.5)
+--history_font_default:setHAlign(2):setVAlign(0):enableOutline(color.Black,2.5)
 local timer_font = BMF:loadFont("timer_font",font_path.."chaney_num.fnt",font_path.."chaney_num_0.png")
 timer_font:setMonospace(60,{",",".",":"})
-local timer_state = BMF:createState("timer_state")
+--local timer_state = BMF:createState("timer_state")
 cutin_obj = Class(object)
 function cutin_obj:init(card, boss)
     self.spellfont = cutin_font_default
@@ -44,6 +46,7 @@ function cutin_obj:frame()
     end
 end
 function cutin_obj:render()
+    --[[
     SetImageState("spellnamebg", "", Color(255 * self.alpha * self.alpha2,255,255,255))
     self.spellfont:setColor(Color(255 * self.alpha * self.alpha2,255,255,255))
     self.historyfont:setColor(Color(255 * self.alpha * self.alpha2,255,255,255))
@@ -58,6 +61,7 @@ function cutin_obj:render()
             self.x-100, self.y-yoff, 5, 5, self.hscale*0.4, self.vscale*0.4)
     self.historyfont:render(self.history_text,
             self.x, self.y-yoff, 5, 5, self.hscale*0.4, self.vscale*0.4)
+    --]]
 end
 function cutin_obj:kill()
     PreserveObject(self)

@@ -4,7 +4,7 @@ shape.__index = shape
 
 shape.functions = {
     circle = function(self,ang)
-        return Vector(1,0):rotated(ang)
+        return Vector.fromAngle(ang)
     end,
     polygon = function(self,ang)
         return Vector.fromPolygon(self.sides,(ang - self.angle)/360 * self.sides):rotated(self.angle)

@@ -209,12 +209,12 @@ function stage.group.frame_sc_pr(self)
 end
 
 function stage.group.render(self)
-    --ui.DrawFrame(self)
+    ui.DrawFrame(self)
     if lstg.var.init_player_data then
-        --ui.DrawScore(self)
+        ui.DrawScore(self)
     end
     SetViewMode 'world'
-    RenderClearViewMode(Color(255, 0, 0, 0))
+    RenderClearViewMode(Color(255, 32, 0, 0))
 end
 
 function stage.group.Start(group)

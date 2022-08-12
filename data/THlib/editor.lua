@@ -53,7 +53,7 @@ local bullet_frame = bullet.frame
 local straight_495 = straight_495
 
 ---@class THlib._straight:THlib.bullet
-_straight = Class(bullet)
+_straight = zclass(bullet)
 function _straight:init(imgclass, index, x, y, v, angle, aim, omiga,
                         stay, destroyable, time, _495, accel, accangle, maxv, through)
     self.x = x
@@ -115,89 +115,6 @@ function _straight:frame()
         straight_495.frame(self)
     else
         bullet_frame(self)
-    end
-end
-
-local default_circle = shape.new('circle')
-
-function bulgroup_pat(sparams, func)
-    local ret = {}
-    local actparams = {
-        master = Vector(0,0),         --object it will always spawn from
-        radius = 0,           --spawn radius
-        angle = 0,             --base angle
-        spread = 360,         --how much it's spread out (centered)
-        type = "scale",       --the shape of the bullet graphic (can be a table, doing so will loop through the shapes)
-        color = color.Red,     --the color of the bullet (can be a table, doing so will loop through the colors)
-        class = straight_pattern,      --the class of the bullet (for customised behavior)
-        count = 5,             --how many bullets are shot per iteration
-        speed = 1,             --the speed of each iteration (can be a table of 2 numbers, which then the final speed depends on the layer)
-        layer = 1,             --how many bullets are shot per count
-        accel = 0,             --acceleration of the bullets
-        maxv = 1000,
-        gravity = 0,         --gravity of the bullets
-        maxvy = 1000,
-        indes = false,         --if the bullet should be indestructible
-        shape = default_circle,        --the shape of the iteration
-        delay = 0,             --the delay per count
-        layer_delay = 0, --the delay per layer
-        jitter = 0,           --the angle rng per layer shot
-        offset = Vector(0,0),
-        callback = voidfunc,
-        layer_callback = voidfunc,
-        rm = "bul++",
-        visual_delay = 7, --the cloud delay thing
-        omiga = 0,
-    }
-    ret.params = {}
-    table.deploy(actparams,sparams)
-    local params = {}
-    local rl = math.round(actparams.layer)
-    for l=0, rl do
-        local tl = l/rl
-        Print("error start")
-        for k,v in pairs(actparams) do
-            params[k] = IntHelp.lerp(v)
-            Print("params[" .. k .. "] = IntHelp.lerp(" .. tostring(v) .. ")")
-        end
-        Print("error end")
-        for c = 1, params.count do
-            local obj
-            local _func = func
-            if not _func then
-                obj = New(params.class,actparams,params,l,tl,c)
-            else
-                obj = _func(self,params,l,tl,c)
-            end
-            params.callback(obj, self)
-            if params.delay > 0 then
-                task.Wait(int(params.delay+0.5))
-            end
-            table.insert(ret, obj)
-        end
-        params.layer_callback(self)
-        if params.layer_delay > 0 then
-            task.Wait(int(params.layer_delay+0.5))
-        end
-    end
-    return ret
-end
-
-function _create_bullet_group(style, color, x, y, n, t, v1, v2, angle, da, aim, omiga, stay, des, time, _495, enemy)
-    if n >= 1 then
-        New(_bullet_shooter, function()
-            local dv = (v2 - v1) / n
-            da = da / n
-            angle = angle + da * (-n / 2 + 0.5)
-            v1 = v1 + dv * 0.5
-            if aim then
-                angle = angle + Angle(x, y, lstg.player.x, lstg.player.y)
-            end
-            for i = 0, n - 1 do
-                last = New(_straight, style, color, x, y, v1 + dv * i, angle + da * i, false, omiga, stay, des, time, _495)
-                task._Wait(t)
-            end
-        end, enemy)
     end
 end
 
@@ -297,87 +214,6 @@ function _stop_music()
     end
 end
 
----@class THlib._object:object
-_object = Class(object)
---_object = Class(object)
-function _object:frame()
-    if self.hp <= 0 then
-        Kill(self)
-    end
-    --if self.blend ~= self._blend then
-    --    self.blend = self._blend
-    --end
-    task_Do(self)
-end
-
-function _object:render()
-    SetImgState(self, self._blend, self._a, self._r, self._g, self._b)
-    DefaultRenderFunc(self)
-end
-
-function _object:set_color(blend, a, r, g, b)
-    self._blend, self._a, self._r, self._g, self._b = blend, a, r, g, b
-end
-
-function _object:take_damage(dmg)
-    self.hp = self.hp - dmg
-end
-
-function _object:colli(other)
-    if self.group == GROUP_ENEMY then
-        if other.dmg then
-            lstg.var.score = lstg.var.score + 10
-            Damage(self, other.dmg)
-            if self._master and self._dmg_transfer and IsValid(self._master) then
-                Damage(self._master, other.dmg * self._dmg_transfer)
-            end
-        end
-        other.killerenemy = self
-        if not (other.killflag) then
-            Kill(other)
-        end
-        if not other.mute then
-            if self.dmg_factor then
-                if self.hp > 100 then
-                    PlaySound('damage00', 0.4, self.x / 200)
-                else
-                    PlaySound('damage01', 0.6, self.x / 200)
-                end
-            else
-                if self.hp > 60 then
-                    if self.hp > self.maxhp * 0.2 then
-                        PlaySound('damage00', 0.4, self.x / 200)
-                    else
-                        PlaySound('damage01', 0.6, self.x / 200)
-                    end
-                else
-                    PlaySound('damage00', 0.35, self.x / 200, true)
-                end
-            end
-        end
-    end
-end
-function _object:del()
-    if ParticleGetn(self) > 0 then
-        misc.KeepParticle(self)
-    end
-    _del_servants(self)
-    if not self.hide then
-        New(bubble3, self.img, self.x, self.y, self.rot, self.dx, self.dy, self.omiga, 15, self.hscale, self.hscale,
-            Color(self._a, self._r, self._g, self._b), Color(0, self._r, self._g, self._b), self.layer, self._blend)
-    end
-end
-function _object:kill()
-    if ParticleGetn(self) > 0 then
-        misc.KeepParticle(self)
-    end
-    _kill_servants(self)
-    if not self.hide then
-        New(bubble3, self.img, self.x, self.y, self.rot, self.dx, self.dy, self.omiga, 15, self.hscale, self.hscale,
-            Color(self._a, self._r, self._g, self._b), Color(0, self._r, self._g, self._b), self.layer, self._blend)
-    end
-end
-
 ---@class THlib.bubble3:object
 bubble3 = Class(object)
 
@@ -411,25 +247,6 @@ end
 function bubble3:frame()
     if self.timer == self.life_time - 1 then
         Del(self)
-    end
-end
-
----@class THlib._bullet_shooter:object
-_bullet_shooter = Class(object)
-function _bullet_shooter:init(f, enemy)
-    self.group = GROUP_GHOST
-    self.hide = true
-    self.enemy = enemy
-    task.New(self, f)
-end
-function _bullet_shooter:frame()
-    if not (IsValid(self.enemy) or self.enemy == stage.current_stage) then
-        Del(self)
-    else
-        task.Do(self)
-        if coroutine.status(self.task[1]) == 'dead' then
-            Del(self)
-        end
     end
 end
 
@@ -476,16 +293,8 @@ function _del(unit, trigger)
         RawDel(unit)
     end
 end
---[[
-_can_be_master = {
-    [_object] = true,
-    [enemy] = true,
-    [boss] = true,
-    --[laser] = true,
-    [bullet] = true
-}
---]]
-function _connect(master, servant, dmg_transfer, con_death)
+
+function ConnectObj(master, servant, dmg_transfer, con_death)
     if IsValid(master) and IsValid(servant) then
         if con_death then
             master._servants = master._servants or {}
@@ -495,7 +304,7 @@ function _connect(master, servant, dmg_transfer, con_death)
         servant._dmg_transfer = dmg_transfer
     end
 end
-function _set_rel_pos(servant, x, y, rot, follow_rot)
+function SetRelativePos(servant, x, y, rot, follow_rot)
     if servant._master and IsValid(servant._master) then
         local master = servant._master
         if follow_rot then
@@ -510,7 +319,7 @@ end
 
 ---
 --- 对_servants中所有对象执行Kill，清空_servants
-function _kill_servants(master)
+function KillServants(master)
     for k, v in pairs(master._servants) do
         if IsValid(v) then
             Kill(v)
@@ -521,7 +330,7 @@ end
 
 ---
 --- 对_servants中所有对象执行Del，清空_servants
-function _del_servants(master)
+function DelServants(master)
     for k, v in pairs(master._servants) do
         if IsValid(v) then
             Del(v)
@@ -530,66 +339,7 @@ function _del_servants(master)
     master._servants = {}
 end
 
---- 从文件载入图像
----@param name string 图像资源名
----@param filename string 文件名
----@param mipmap boolean
----@param a number 横向碰撞大小的一半
----@param b number 纵向碰撞大小的一半
----@param rect boolean 碰撞盒形状
----@param edge number 图像切边大小
-function _LoadImageFromFile(name, filename, mipmap, a, b, rect, edge)
-    LoadTexture(name, filename, mipmap)
-    local w, h = GetTextureSize(name)
-    return LoadImage(name, name, edge, edge, w - edge * 2, h - edge * 2, a, b, rect)
-end
-
---- 从文件载入图像组
----@param name string 图像资源名
----@param filename string 文件名
----@param mipmap boolean
----@param r number 列数
----@param l number 行数
----@param a number
----@param b number
----@param rect boolean 碰撞盒形状
-function _LoadImageGroupFromFile(name, filename, mipmap, r, l, a, b, rect)
-    LoadTexture(name, filename, mipmap)
-    local w, h = GetTextureSize(name)
-    LoadImageGroup(name, name, 0, 0, w / r, h / l, r, l, a, b, rect)
-end
-
 _sc_table = {}
-
-Include 'THlib\\Archimedes.lua'
-
----@class THlib.archiexpand:THlib.bullet
-archiexpand = Class(bullet)
-function archiexpand:init(imgclass, color, destroyable, navi, auto, center, radius, angle, omiga, deltar)
-    bullet.init(self, imgclass, color, true, destroyable)
-    self.navi = navi and auto == 0
-    self.omiga = auto
-    archimedes.expand.init(self, center, radius, angle, omiga, deltar)
-end
-
-function archiexpand:frame()
-    bullet.frame(self)
-    archimedes.expand.frame(self)
-end
-
----@class THlib.archirotate:THlib.bullet
-archirotate = Class(bullet)
-function archirotate:init(imgclass, color, destroyable, navi, auto, center, radius, angle, omiga, time)
-    bullet.init(self, imgclass, color, true, destroyable)
-    self.navi = navi and auto == 0
-    self.omiga = auto
-    archimedes.rotation.init(self, center, radius, angle, omiga, time)
-end
-
-function archirotate:frame()
-    bullet.frame(self)
-    archimedes.rotation.frame(self)
-end
 
 ---
 --- 设置加速度
@@ -603,18 +353,16 @@ end
 function SetA(self, accel, angle, maxv, gravity, maxvy, navi)
     self.navi = navi
     if accel ~= 0 then
-        self.acceleration = { ax = accel * cos(angle), ay = accel * sin(angle) }
+        self.ax, self.ay = accel * cos(angle),  accel * sin(angle)
     end
     if gravity ~= 0 then
-        self.acceleration = self.acceleration or {}
-        self.acceleration.g = gravity
+        self.g = gravity
     end
     if maxv ~= 0 then
-        self.forbidveloc = { v = maxv }
+        self.maxv = maxv
     end
     if maxvy ~= 0 then
-        self.forbidveloc = self.forbidveloc or {}
-        self.forbidveloc.vy = maxvy
+        self.maxvy = maxvy
     end
 end
 
@@ -659,68 +407,6 @@ function bullet_cleaner:colli(other)
             Del(other)
         end
     end
-end
-
----@class THlib.rebounder:object
-rebounder = Class(object)
-local rebounder = rebounder
-rebounder.list = {}
-rebounder.size = 0
-function rebounder:init(x, y, length, angle)
-    self.x = x
-    self.y = y
-    self.length = length
-    self.rot = angle
-    self.last_rot = nil
-    self.last_len = nil
-    self.group = GROUP_GHOST
-    self.colli = false
-    self.id = rebounding.AddRebounder(x, y, length, angle)
-    rebounder.list[self.id] = self
-    rebounder.size = rebounder.size + 1
-end
-
-function rebounder:frame()
-    if self.last_rot ~= self.rot or self.last_len ~= self.length or self.dx ~= 0 or self.dy ~= 0 then
-        rebounding.UpdateRebounder(self.id, self.x, self.y, self.length, self.rot)
-    end
-    task.Do(self)
-end
-
-function rebounder:colli(obj)
-    if obj.omiga == 0 and not obj.navi then
-        obj.rot = self.rot * 2 - obj.rot
-    end
-end
-
-function rebounder:kill()
-    rebounding.ReleaseRebounder(self.id)
-    rebounder.list[self.id] = nil
-    rebounder.size = rebounder.size - 1
-end
-
-function rebounder:del()
-    rebounding.ReleaseRebounder(self.id)
-    rebounder.list[self.id] = nil
-    rebounder.size = rebounder.size - 1
-end
-
-function PauseRebound()
-    ReboundPause = true
-end
-
-function ResumeRebound()
-    ReboundPause = false
-end
-
-function ClearRebound()
-    ReboundPause = false
-    for _, obj in pairs(rebounder.list) do
-        Del(obj)
-    end
-    rebounder.list = {}
-    rebounder.size = 0
-    rebounding.ClearRebound()
 end
 
 function MakeSmear(obj, length, interval, blend, color, size)
@@ -797,7 +483,6 @@ end
 -- Include("THlib/List.lua")
 -- Include("THlib/Array.lua")
 -- Include("THlib/Class.lua")
-Include("THlib/BulletEx.lua")
 
 ---@class THlib.RenderObject:object
 RenderObject = Class(object)
@@ -821,38 +506,6 @@ function RenderObject:frame()
     task.Do(self)
 end
 
-function _set_a(obj, a, rot, aim)
-    if rot == "original" then
-        rot = atan2(obj.vy, obj.vx)
-    end
-    if aim then
-        rot = rot + Angle(obj, player)
-    end
-    obj.acceleration = obj.acceleration or {}
-    local accel = obj.acceleration
-    accel.ax = a * cos(rot)
-    accel.ay = a * sin(rot)
-end
-
-function _set_g(obj, g)
-    obj.acceleration = obj.acceleration or {}
-    obj.acceleration.g = g
-end
-
-function _forbid_v(obj, v, vx, vy)
-    obj.forbidveloc = obj.forbidveloc or {}
-    local fv = obj.forbidveloc
-    if v ~= "original" then
-        fv.v = v
-    end
-    if vx ~= "original" then
-        fv.vx = vx
-    end
-    if vy ~= "original" then
-        fv.vy = vy
-    end
-end
-
 function GetA(obj)
     local acc = {}
     if obj.acceleration then
@@ -862,18 +515,11 @@ function GetA(obj)
 end
 
 function GetG(obj)
-    local acc = {}
-    if obj.acceleration then
-        acc = obj.acceleration
-    end
-    return acc.g
+    return obj.g
 end
 
 function GetFV(obj)
     local fv = {}
-    if obj.forbidveloc then
-        fv = obj.forbidveloc
-    end
     return fv.v or 0, fv.vx or 0, fv.vy or 0
 end
 

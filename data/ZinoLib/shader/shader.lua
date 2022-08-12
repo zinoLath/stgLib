@@ -1,7 +1,7 @@
 local path = GetCurrentScriptDirectory()
 POSTEFF_PATH = path
 Print("============LOADING SHADERS=============")
-LoadFX("gradient_map_fast",path.."gradient_map_fast.glsl")
+--LoadFX("gradient_map_fast",path.."gradient_map_fast.glsl")
 Print("==========LOADING SHADERS DONE==========")
 posteff_obj = Class(xobject)
 local posteff_obj_push = Class(object)

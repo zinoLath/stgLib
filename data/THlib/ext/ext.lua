@@ -187,7 +187,6 @@ function DoFrame()
         CollisionCheck(GROUP_SPELL, GROUP_ENEMY_BULLET)
         CollisionCheck(GROUP_SPELL, GROUP_INDES)
         --由OLC添加，用于检查与自机碰撞，可以做？？？（好吧其实我不知道能做啥= =
-        CollisionCheck(GROUP_CPLAYER, GROUP_PLAYER)
     end
     UpdateXY()
     AfterFrame()

@@ -47,3 +47,5 @@ end
 function M.spawner:del()
 
 end
+
+return M

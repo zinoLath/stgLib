@@ -1,11 +1,13 @@
+--TODO: IMPLEMENT EVENTDISPATCHER
 local clamp = math.clamp
-local event = lstg.eventDispatcher
+local Event = Event
 local lerp = math.lerp
 local path = GetCurrentScriptDirectory()
 LoadImageFromFile("hitbox_player", path.."hitbox.png")
+SetImageScale("hitbox_player",2)
 LoadImageFromFile("protect_circle", path.."protect_circle.png")
 LoadImageFromFile("red_player_mask", path.."red_player_mask.png")
-player_class = Class(xobject)
+player_class = zclass(object)
 function player_class:init()
     if not CheckRes("img", "player_placeholder") then
         CopyImage('player_placeholder', 'white')
@@ -13,6 +15,7 @@ function player_class:init()
     end
     self.x, self.y = 0,-175
     self.img = 'player_placeholder'
+    self.hscale, self.vscale = 4,4
     --self.omiga = 3
     self.uspeed = 5
     self.fspeed = 2
@@ -35,16 +38,16 @@ function player_class:init()
 end
 function player_class:colli(other)
     if not self.is_dying and not self.dialog and not cheat and other.playercolli ~= false then
-        event:dispatchEvent("onPlayerColli", other)
+        Event:call("onPlayerColli", other)
         if self.protect == 0 and not self.is_dying then
-            event:dispatchEvent("onPlayerHit", other)
+            Event:call("onPlayerHit", other)
         end
         if other.group == GROUP_ENEMY_BULLET and self.protect ~= 0 then
-            event:dispatchEvent("onPlayerInvulHit", other)
+            Event:call("onPlayerInvulHit", other)
         end
     end
 end
-event:addListener('onPlayerHit', function()
+Event:new('onPlayerHit', function()
     local self = player
     self.is_dying = true
     task.New(self, function()
@@ -54,15 +57,15 @@ event:addListener('onPlayerHit', function()
                 task.Wait(1)
             else
                 self.is_dying = false
-                event:dispatchEvent('onPlayerDeathbomb')
+                Event:call('onPlayerDeathbomb')
                 return
             end
         end
-        event:dispatchEvent('onPlayerDeath')
+        Event:call('onPlayerDeath')
         self.is_dying = false
     end, 0, 'PlayerDeathbombCheck')
 end)
-event:addListener('onPlayerDeath', function()
+Event:new('onPlayerDeath', function()
     item.PlayerMiss()
 end,-1,'ItemMiss')
 
@@ -106,6 +109,7 @@ function player_class:move()
     end
     self._dx = dx
     self.x, self.y = clamp(self.x+dx*speed,w.pl,w.pr), clamp(self.y+dy*speed,w.pb,w.pt)
+    lstg.worldoffset.centerx = self.x*0.3
 end
 function player_class:update_focus()
     self.slow = 0
@@ -207,7 +211,7 @@ function player_class:setInactive()
     self.active = false
 end
 
-player_class.option = Class(object)
+player_class.option = zclass(object)
 function player_class.option:init(player,id)
     self.player = player
     self.id = id
@@ -259,7 +263,7 @@ function player_class.option:onHyperEnd()
 end
 
 
-zino_grazer = Class(object)
+zino_grazer = zclass(object)
 function zino_grazer:init(obj)
     self.img = "hitbox_player"
     self.obj = obj
@@ -303,7 +307,8 @@ function zino_grazer:colli(other)
     end
 end
 function zino_grazer:render()
-    DefaultRenderFunc(self)
+    SetImageState(self.img,"",Color(self.A,255,255,255))
+    Render(self.img, self.x, self.y,self.rot,self.hscale, self.vscale)
     local scale = lerp(0,2,self.p)
     local alpha = lerp(0,255,self.p)
     SetImageState("protect_circle", "mul+add", Color(alpha,255,255,255))
@@ -390,13 +395,14 @@ function player_showlives_death:render()
         Render('life_fill', pos.x ,pos.y,0,lifescale * self.lastscale,lifescale * self.lastscale)
     end
 end
-event:addListener('onPlayerDeath', function()
+Event:new('onPlayerDeath', function()
     local self = player
     misc.ShakeScreen(10, 30)
     New(player_showlives_death)
 end,1, 'DeathEffect')
-event:addListener('onPlayerHit', function()
+Event:new('onPlayerHit', function()
     New(player_death_red)
 end,1,'HitEffect')
+do return end
 Include(path.."player_team.lua")
 Include(path.."bawer_sora/main.lua")

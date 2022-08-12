@@ -223,7 +223,6 @@ M.tag_funcs.shake = {
         end
     end
 }
-count = 1
 local function returnTList(txt,info,state,ret,state_list,cursor)
     state = state or {}
     state_list = state_list or {}
@@ -281,13 +280,6 @@ local function returnTList(txt,info,state,ret,state_list,cursor)
         end
     end
     return ret,state_list
-end
-local function getLargestHeight(line)
-    local heightList = {}
-    for k,v in ipairs(line) do
-        table.insert(heightList,v.lineHeight)
-    end
-    return math.max(unpack(heightList))
 end
 ---text is the table ver of a xml element!!!
 function M:pool(text,init_state,width)
@@ -370,7 +362,7 @@ function M:renderPool(pool,x,y,scale,count,timer)
             Render(render_command.img,render_command.x,render_command.y,render_command.rot,render_command.scale,render_command.scale)
         end
         --PopRenderTarget("BMF_FONT_BUFFER")
-        --TODO: USE RENDERTARGET FOR OUTLINE (EXTRA_BLEND_NEEDED)
+        --TODO: USE RENDERTARGET FOR OUTLINE
     end
 end
 function M.font_functions:clone()
