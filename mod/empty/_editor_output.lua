@@ -5,26 +5,21 @@ _allow_sc_practice=true
 local path = GetCurrentScriptDirectory()
 local str =
 [[
-Hi! My name is <shake><state color="#ffff00">Test 1,</state> and I'm shaking!</shake> I don't know what else to say!
+Hi! My name is <border color="#00ff00"><shake><state color="#ffff00">Test 1,</state> and I'm shaking!</shake> I don't</border> know what else to say!
 ]]
 hud_font = BMF:loadFont("Philosopher", path .. "font\\philosopher.fnt", path .. "font\\philosopher_0.png")
 local hud_font = hud_font
 local state = {
 	font = hud_font,
 	scale = 0.2,
-	border_color = Color(255,0,255,0),
-	border_size = 10
+	border_color = Color(255,255,0,0),
+	border_size = 2
 }
 local pool = BMF:pool(str,state,300)
 test_text = Class(object)
-test_text[".render"] = true
-function test_text:init()
-	self.img = hud_font.chars["c"].sprite
-	self.x = 0; self.y = 0
-	self.layer = LAYER_TOP
-	self._blend = "grad+alpha"
-	self._color = Color(255,255,0,0)
-	self._subcolor = Color(255,0,0,255)
+function test_text:render()
+	SetViewMode("world")
+	BMF:renderPool(pool,self.x-180,self.y,1,nil,self.timer,screen.scalefrom480)
 end
 stage.group.New('menu',{},"Normal",{lifeleft=2,power=100,faith=50000,bomb=3},true,1)
 stage.group.AddStage('Normal','Stage 1@Normal',{lifeleft=7,power=300,faith=50000,bomb=3},true)
@@ -33,6 +28,7 @@ stage.group.DefStageFunc('Stage 1@Normal','init',function(self)
     difficulty=self.group.difficulty    --New(mask_fader,'open')
     --New(reimu_player)
 	New(player_class)
+	New(test_text)
     task.New(self,function()
         do
             -- New(river_background)

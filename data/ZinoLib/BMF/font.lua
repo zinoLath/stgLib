@@ -219,15 +219,38 @@ M.tag_funcs.shake = {
     init = function(tag,state)
         state.render_funcs = state.render_funcs or {}
         state.render_funcs.shake = function(render_command,_state,char,timer,v)
-            render_command.y = render_command.y + 3 * sin(timer*5 + v.id * 30)
+            render_command.y = render_command.y + 10 * sin(timer*5 + v.id * 30)
         end
     end
 }
+M.tag_funcs.border = {
+    init = function(tag,state)
+        state.render_funcs = state.render_funcs or {}
+        if tag._attr.color then
+            state.border_color = StringToColor(tag._attr.color)
+        end
+    end
+}
+local function fontcopy(tb)
+    if type(tb) == "table" then
+        local ret = setmetatable({  }, getmetatable(tb))
+        for k,v in pairs(tb) do
+            if type(v) ~= "table" and k ~= "font" then
+                ret[k] = v
+            else
+                ret[k] = fontcopy(v)
+            end
+        end
+        return ret
+    else
+        return tb
+    end
+end
 local function returnTList(txt,info,state,ret,state_list,cursor)
     state = state or {}
     state_list = state_list or {}
     state.scale = state.scale or 1
-    local cr_state = softcopy(state)
+    local cr_state = fontcopy(state)
     state_list[#state_list+1] = cr_state
     local state_id = #state_list
     ret = ret or {}
@@ -305,11 +328,8 @@ function M:pool(text,init_state,width)
         stateList[v.state].border_size = stateList[v.state].border_size or 0
         stateList[v.state].border_color = stateList[v.state].border_color or Color(255,0,0,0)
         if v.state ~= si then
-            local borderHash = stateList[v.state].border_size * 255 * 255 * 255 +
-            stateList[v.state].border_color.r * 255 * 255 + stateList[v.state].border_color.g * 255 + stateList[v.state].border_color.b
-            local hasHash = false
             for _k,_v in ipairs(borderList) do
-                if _v.borderHash == borderHash then
+                if _v.color == stateList[v.state].border_color then
                     i = _k
                     hasHash = true
                 end
@@ -330,16 +350,20 @@ function M:pool(text,init_state,width)
 end
 local ctdefault = Color(255,255,255,255)
 local cbdefault = Color(255,255,255,255)
-local font_RTBUFFER = CreateRenderTarget("BMF_FONT_BUFFER")
-function M:renderPool(pool,x,y,scale,count,timer)
+CreateRenderTarget("BMF_FONT_BUFFER")
+CreateRenderTarget("BMF_FONT_BORDER")
+LoadFX("BMF_BORDER_SHADER", GCSD .. "shader.fx")
+LoadFX("BMF_EMPTY_SHADER", GCSD .. "empty.fx")
+function M:renderPool(pool,x,y,scale,count,timer,imgscale)
     local render_command = {}
     count = count or 9999999999
     timer = timer or 0
+    imgscale = imgscale or 1
     render_command._xorg = x
     render_command._yorg = y
     for _k,_v in ipairs(pool.borderList) do
-        --PushRenderTarget("BMF_FONT_BUFFER")
-        --RenderClear(Color(0x00000000))
+        PushRenderTarget("BMF_FONT_BUFFER")
+        RenderClear(Color(0x00000000))
         for k,v in ipairs(_v.glyphList) do
             if v.id > count then
                 break
@@ -349,7 +373,7 @@ function M:renderPool(pool,x,y,scale,count,timer)
             render_command.x = x+v.x*scale
             render_command.y = y+v.y*scale
             render_command.img = char.sprite
-            render_command.scale = scale*state.scale
+            render_command.scale = scale*state.scale*imgscale
             render_command.topcolor = state.color_top or ctdefault
             render_command.botcolor = state.color_bot or cbdefault
             render_command.rot = 0
@@ -361,8 +385,14 @@ function M:renderPool(pool,x,y,scale,count,timer)
             SetImageSubColor(render_command.img, render_command.topcolor,render_command.topcolor,render_command.botcolor,render_command.botcolor)
             Render(render_command.img,render_command.x,render_command.y,render_command.rot,render_command.scale,render_command.scale)
         end
-        --PopRenderTarget("BMF_FONT_BUFFER")
-        --TODO: USE RENDERTARGET FOR OUTLINE
+        PopRenderTarget("BMF_FONT_BUFFER")
+        local color = _v.color
+        local size = _v.size
+        lstg.PostEffect("BMF_BORDER_SHADER", "BMF_FONT_BUFFER", 6, "mul+alpha",
+                {
+                    { color.r, color.g, color.b, color.a },
+                    { size, 0, 0, 0}
+                })
     end
 end
 function M.font_functions:clone()
