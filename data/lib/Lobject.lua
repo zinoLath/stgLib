@@ -49,12 +49,24 @@ object = { 0, 0, 0, 0, 0, 0;
            end
 }
 table.insert(all_class, object)
-
----define new class
----@param base object
----@param define object
----@overload fun(base:object)
-function Class(base, define)
+local function functify(fnc)
+    if type(fnc) == "table" then
+        if fnc.funced then
+            return fnc
+        elseif fnc.tofunc then
+            return fnc:tofunc()
+        else
+            return function (...)
+                for k,v in ipairs(fnc) do
+                    v(...)
+                end
+            end
+        end
+    else
+        return fnc
+    end
+end
+local function baseclass(base)
     if not base then
         --[!!!处理一个特殊的歧义!!!]
         --由于lua无法识别传入nil参数和不传入参数，所以会出现歧义，进而可能会引发最隐匿的bug
@@ -83,6 +95,14 @@ function Class(base, define)
     result.colli = base.colli
     result.kill = base.kill
     result.base = base
+    return result
+end
+---define new class
+---@param base object
+---@param define object
+---@overload fun(base:object)
+function Class(base, define)
+    local result = baseclass(base)
     if define and type(define) == "table" then
         for k, v in pairs(define) do
             result[k] = v
@@ -94,24 +114,7 @@ end
 
 function zclass(base, ...)
     local arg = {...}
-    base = base or object
-    if (type(base) ~= 'table') or not base.is_class then
-        error('Invalid base class or base class does not exist.')
-    end
-    local result = { 0, 0, 0, 0, 0, 0 }
-    for k,v in pairs(base) do
-        if type(k) ~= "number" then
-            result[k] = deepcopy(v)
-        end
-    end
-    result.is_class = true
-    result.init = base.init
-    result.del = base.del
-    result.frame = base.frame
-    result.render = base.render
-    result.colli = base.colli
-    result.kill = base.kill
-    result.base = base
+    local result = baseclass(base)
     result[".render"] = true
     for k,define in ipairs(arg) do
         if type(define) == "table" then
@@ -127,12 +130,12 @@ end
 ---对所有class的回调函数进行整理，给底层调用
 function InitAllClass()
     for _, v in pairs(all_class) do
-        v[1] = v.init
-        v[2] = v.del
-        v[3] = v.frame
-        v[4] = v.render
-        v[5] = v.colli
-        v[6] = v.kill
+        v[1] = functify(v.init)
+        v[2] = functify(v.del)
+        v[3] = functify(v.frame)
+        v[4] = functify(v.render)
+        v[5] = functify(v.colli)
+        v[6] = functify(v.kill)
     end
 end
 

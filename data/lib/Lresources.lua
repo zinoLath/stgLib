@@ -66,7 +66,7 @@ end
 
 function CopyImage(newname, img)
     if ImageList[img] then
-        LoadImage(newname, unpack(ImageList[img]))
+        return LoadImage(newname, unpack(ImageList[img]))
     elseif img then
         error("The image \"" .. img .. "\" can't be copied.")
     else

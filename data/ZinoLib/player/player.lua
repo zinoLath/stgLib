@@ -109,7 +109,8 @@ function player_class:move()
     end
     self._dx = dx
     self.x, self.y = clamp(self.x+dx*speed,w.pl,w.pr), clamp(self.y+dy*speed,w.pb,w.pt)
-    lstg.worldoffset.centerx = self.x*0.3
+    local dx = lstg.world.pr - lstg.world.r
+    lstg.worldoffset.dx = self.x/lstg.world.pr * (dx)
 end
 function player_class:update_focus()
     self.slow = 0

@@ -17,9 +17,14 @@ local state = {
 }
 local pool = BMF:pool(str,state,300)
 test_text = Class(object)
-function test_text:render()
+test_text.render = {}
+test_text.render[1] = function (self)
 	SetViewMode("world")
 	BMF:renderPool(pool,self.x-180,self.y,1,nil,self.timer,screen.scalefrom480)
+end
+test_text.render[2] = function (self)
+	SetViewMode("world")
+	BMF:renderPool(pool,self.x-180,self.y+40,0.2,nil,self.timer,screen.scalefrom480)
 end
 stage.group.New('menu',{},"Normal",{lifeleft=2,power=100,faith=50000,bomb=3},true,1)
 stage.group.AddStage('Normal','Stage 1@Normal',{lifeleft=7,power=300,faith=50000,bomb=3},true)
@@ -27,6 +32,7 @@ stage.group.DefStageFunc('Stage 1@Normal','init',function(self)
 	item.PlayerInit()
     difficulty=self.group.difficulty    --New(mask_fader,'open')
     --New(reimu_player)
+	New(DEBUG_BG)
 	New(player_class)
 	New(test_text)
     task.New(self,function()

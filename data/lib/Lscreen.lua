@@ -36,11 +36,14 @@ function UpdateScreenResources()
 end
 local scwidth, scheight = 1920,1080 --screen width and height (coords, not actual resolution)
 local rx, ry = scwidth/2, scheight/2 --stgframe center on the screen
-local ww, wh = 384, 448 --world width and height (stg frame)
-local pw, ph = ww, wh --player bounds (no idea why its different lol)
+local ww, wh = 330, 448 --world width and height (stg frame)
+local hidden_width = 100
 local stg_scale = 2.25
 local rw, rh = ww*stg_scale, wh*stg_scale --render width and height (the size of the stg frame on the screen)
 local boundw, boundh = 32, 32 --object deletion box size (stg frame + bound)
+
+
+local pw, ph = ww+hidden_width, wh --player bounds (no idea why its different lol)
 local RAW_DEFAULT_WORLD = {--this one is the "standard" one that will always be the base for everything
     l = -ww/2, r = ww/2, b = -wh/2, t = wh/2,
     boundl = -ww/2-boundw, boundr = ww/2+boundw, boundb = -wh/2-boundh, boundt = wh/2+boundh,

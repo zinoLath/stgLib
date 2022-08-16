@@ -205,6 +205,20 @@ function camera_setter:render()
     SetViewMode 'world'
 end
 
+
+DEBUG_BG = Class(object)
+function DEBUG_BG:init(color)
+    self.img = CopyImage("bg_white","white")
+    self.color = color or Color(255,64,0,0)
+    self.bound = false
+    self.group = GROUP_GHOST
+    self.layer = LAYER_BG
+end
+function DEBUG_BG:render()
+    SetViewMode 'world'
+    SetImageState(self.img,"",self.color)
+    RenderRect(self.img,-1000,1000,-1000,1000)
+end
 --[[
 Include 'THlib/background/ball/ball.lua'
 Include 'THlib/background/bamboo/bamboo.lua'
