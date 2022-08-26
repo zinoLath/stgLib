@@ -10,7 +10,6 @@ Include(miscpath..'VertexRenderer.lua')
 Include(miscpath..'PatternObject.lua')
 Include(path..'BMF\\font.lua') --TO REFACTOR
 Include(path..'animation\\main.lua')
-Include(path..'player\\player.lua') --TO REFACTOR
 Include(path..'menu\\main.lua') --TO REFACTOR
 --Include(path..'shader\\shader.lua')
 Include(path..'xml\\xml2lua.lua')

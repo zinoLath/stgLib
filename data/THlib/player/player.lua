@@ -1,56 +1,206 @@
----=====================================
----player
----=====================================
-player_lib = {}
-local player_lib = player_lib
-
-----------------------------------------
----加载资源
-LoadPS("player_death_ef", "THlib/player/player_death_ef.psi", "parimg1")
-LoadPS("graze", "THlib/player/graze.psi", "parimg6")
-LoadImageFromFile("player_spell_mask", "THlib/player/spellmask.png")
-Include("THlib/player/player_system.lua")
-
-----------------------------------------
----player class
----@class player : lstg.GameObject
-player_class = Class(object)
-local player_class = player_class
-
-player_lib.player_class = player_class
-
-function player_class:init(slot)
-    self.group = GROUP_PLAYER
-    self.layer = LAYER_PLAYER
+--TODO: IMPLEMENT EVENTDISPATCHER
+local clamp = math.clamp
+local Event = Event
+local lerp = math.lerp
+local path = GetCurrentScriptDirectory()
+LoadImageFromFile("hitbox_player", path.."hitbox.png")
+SetImageScale("hitbox_player",2)
+LoadImageFromFile("protect_circle", path.."protect_circle.png")
+LoadImageFromFile("red_player_mask", path.."red_player_mask.png")
+player_class = zclass(object)
+function player_class:init()
+    if not CheckRes("img", "player_placeholder") then
+        CopyImage('player_placeholder', 'white')
+        CopyImage('option_placeholder', 'white')
+    end
+    self.x, self.y = 0,-175
+    self.img = 'player_placeholder'
+    self.hscale, self.vscale = 4,4
+    --self.omiga = 3
+    self.uspeed = 5
+    self.fspeed = 2
     self.bound = false
-    self.y = -176
-    self._wisys = PlayerWalkImageSystem(self) --by OLC，自机行走图系统
-    self._playersys = player_lib.system(self, slot) --by OLC，自机逻辑系统
-    lstg.player = self
+    self.layer = LAYER_PLAYER
+    self.slow = 0
+    self.slowf = 0
+    self.grazer = New(zino_grazer,self)
+    self.group = GROUP_PLAYER
+    self.protect = 0
+    self.nextshoot = 0
+    self.nextspell = 0
+    self.nextspecial = 0
+    self.hyper = 0
+    self.dmgratio = 1
+    self.shooting = 0
     player = self
-    if not lstg.var.init_player_data then
-        error("Player data has not been initialized. (Call function item.PlayerInit.)")
+    lstg.player = self
+    self.deathbombtimer = 30
+end
+function player_class:colli(other)
+    if not self.is_dying and not self.dialog and not cheat and other.playercolli ~= false then
+        Event:call("onPlayerColli", other)
+        if self.protect == 0 and not self.is_dying then
+            Event:call("onPlayerHit", other)
+        end
+        if other.group == GROUP_ENEMY_BULLET and self.protect ~= 0 then
+            Event:call("onPlayerInvulHit", other)
+        end
     end
 end
+Event:new('onPlayerHit', function()
+    local self = player
+    self.is_dying = true
+    task.New(self, function()
+        for i=1, self.deathbombtimer do
+            if not self.is_bombing then
+                self.is_dying = true
+                task.Wait(1)
+            else
+                self.is_dying = false
+                Event:call('onPlayerDeathbomb')
+                return
+            end
+        end
+        Event:call('onPlayerDeath')
+        self.is_dying = false
+    end, 0, 'PlayerDeathbombCheck')
+end)
+Event:new('onPlayerDeath', function()
+    item.PlayerMiss()
+end,-1,'ItemMiss')
 
 function player_class:frame()
-    self._playersys:doFrameBeforeEvent()
-    self._playersys:frame()
-    self._playersys:doFrameAfterEvent()
+    --if self.pause then return end
+    lstg.var.pointrate = item.PointRateFunc(lstg.var)
+    player_class.findtarget(self)
+    task.Do(self)
+    self.class.update_focus(self)
+    if not self.is_dying and not self.lock then
+        self.class.move(self)
+        self.class.update_anim(self)
+    end
+    if not self.dialog then
+        self.class.update_var(self)
+        self.class.do_input(self)
+    end
+    self.R = 255-clamp(self.protect/120,0,1)*255
 end
-
-function player_class:render()
-    self._playersys:doRenderBeforeEvent()
-    self._playersys:render()
-    self._playersys:doRenderAfterEvent()
+function player_class:move()
+    local dx, dy = 0,0
+    local w = lstg.world
+    local speed = self.uspeed
+    if self.slow == 1 then
+        speed = self.fspeed
+    end
+    if KeyIsDown('right') then
+        dx = dx + 1
+    end
+    if KeyIsDown('left') then
+        dx = dx - 1
+    end
+    if KeyIsDown('up') then
+        dy = dy + 1
+    end
+    if KeyIsDown('down') then
+        dy = dy - 1
+    end
+    if dx ~= 0 and dy ~= 0 then
+        dx = dx * SQRT2_2
+        dy = dy * SQRT2_2
+    end
+    self._dx = dx
+    self.x, self.y = clamp(self.x+dx*speed,w.pl,w.pr), clamp(self.y+dy*speed,w.pb,w.pt)
+    if self.parallax then
+        local _hx = lstg.world.pr - lstg.world.r
+        local _px = self.x/lstg.world.pr
+        _px = math.tween.linear(math.abs(_px)) * sign(_px)
+        local _dx = _px * (_hx)
+        lstg.worldoffset.dx = _dx
+    end
 end
-
-function player_class:colli(other)
-    self._playersys:doColliBeforeEvent(other)
-    self._playersys:colli(other)
-    self._playersys:doColliAfterEvent(other)
+function player_class:update_focus()
+    self.slow = 0
+    if (KeyIsDown('slow') or self.slowlock) and not self.slowoff then
+        self.slow = 1
+    end
+    if self.slow == 0 then
+        self.slowf = clamp(self.slowf - 1/6,0,1)
+    end
+    if self.slow == 1 then
+        self.slowf = clamp(self.slowf + 1/6,0,1)
+    end
 end
-
+function player_class:update_anim()
+    if self.animManager then
+        self.animManager:update()
+    end
+end
+function player_class:update_var()
+    if self.protect > 0 then
+        self.protect = self.protect - 1
+    end
+    if self.nextshoot > 0 then
+        self.nextshoot = self.nextshoot - 1
+    end
+    if self.nextspell > 0 then
+        self.nextspell = self.nextspell - 1
+    end
+    if self.nextspecial > 0 then
+        self.nextspecial = self.nextspecial - 1
+    end
+    do return end
+    if self.hyper == 1 then
+        local func = self.class.hyperOff or voidfunc
+        func(self)
+        for k,v in ipairs(self.options) do
+            local func = v.class.onHyperEnd or voidfunc
+            func(v)
+        end
+        for k,v in ipairs(self.hoptions) do
+            local func = v.class.onHyperEnd or voidfunc
+            func(v)
+        end
+    end
+    if self.hyper > 0 then
+        self.hyper = self.hyper - 1
+    end
+end
+function player_class:do_input()
+    if KeyIsPressed('special') and self.nextspecial <= 0 then
+        self.class.special(self)
+    end
+    do return end
+    self.shooting = 0
+    if KeyIsDown('shoot') then
+        self.shooting = 1
+        self.class.shoot(self)
+    end
+    if KeyIsPressed('spell') and self.nextspell <= 0 and lstg.var.bomb > 0 then
+        local ret = self.class.spell(self)
+        if ret == false then
+            PlaySound('cancel00',0.5)
+        else
+            self.is_bombing = true
+            task.New(self, function()
+                task.Wait(1)
+                self.is_bombing = false  end)
+            item.PlayerSpell()
+        end
+    end
+end
+function player_class:shoot()
+    Print('shooting')
+    self.nextshoot = 10
+end
+function player_class:spell()
+    Print('bomb')
+    self.nextspell = 60
+    lstg.var.bomb = lstg.var.bomb - 1
+end
+function player_class:special()
+    Print('special')
+    self.nextspecial = 15
+end
 function player_class:findtarget()
     self.target = nil
     local maxpri = -1
@@ -65,174 +215,133 @@ function player_class:findtarget()
             end
         end
     end
-    for i, o in ObjList(GROUP_NONTJT) do
-        if o.colli then
-            local dx = self.x - o.x
-            local dy = self.y - o.y
-            local pri = abs(dy) / (abs(dx) + 0.01)
-            if pri > maxpri then
-                maxpri = pri
-                self.target = o
-            end
-        end
-    end
 end
-
-function MixTable(x, t1, t2)
-    --子机位置表的线性插值
-    r = {}
-    local y = 1 - x
-    if t2 then
-        for i = 1, #t1 do
-            r[i] = y * t1[i] + x * t2[i]
-        end
-        return r
+function player_class:setActive()
+    self.active = true
+end
+function player_class:setInactive()
+    self.active = false
+end
+function player_class:render()
+    if self.animManager and self.timer > 2 then
+        self.animManager:render(self)
     else
-        local n = int(#t1 / 2)
-        for i = 1, n do
-            r[i] = y * t1[i] + x * t1[i + n]
-        end
-        return r
+        DefaultRenderFunc(self)
     end
 end
 
-grazer = Class(object)
+player_class.option = zclass(object)
+function player_class.option:init(player,id)
+    self.player = player
+    self.id = id
+    self.layer = LAYER_PLAYER+1
+    self.group = GROUP_GHOST
+    self.bound = false
+    self.img = player.class.optionimg or 'option_placeholder'
+    self.prev_on = false
+    self.on = true
+    self.omiga = 3
+    self._x, self._y = player.x, player.y
+end
+function player_class.option:frame()
+    task.Do(self)
+    local player = self.player
+    self.class.process_movement(self)
+    self.prev_on = self.on
+    if self.on and not self.prev_on then
+        task.New(self,function() self.class.enter(self) end)
+    end
+    if not self.on and self.prev_on then
+        task.New(self,function() self.class.out(self) end)
+    end
+end
+function player_class.option:process_movement()
+    local player = self.player
+    local t = 0.4
+    self._x = lerp(self._x, player.x, t)
+    self._y = lerp(self._y, player.y, t)
+    self.offset = player.optionpos[player.slowf][self.id]
+    self.x = self._x + self.offset.x
+    self.y = self._y + self.offset.y
+end
+function player_class.option:enter()
+    SetFieldInTime(self,20,math.tween.cubicInOut,{'hscale',1}, {'vscale',1})
+end
+function player_class.option:out()
+    SetFieldInTime(self,20,math.tween.cubicInOut,{'hscale',0}, {'vscale',0})
+end
+function player_class.option:onHyper()
+    task.New(self, function()
+        SetFieldInTime(self,20,math.tween.cubicInOut,{'hscale',0}, {'vscale',0})
+    end)
+end
+function player_class.option:onHyperEnd()
+    task.New(self, function()
+        SetFieldInTime(self,20,math.tween.cubicInOut,{'hscale',1}, {'vscale',1})
+    end)
+end
 
-function grazer:init(player)
-    self.layer = LAYER_ENEMY_BULLET_EF + 50
+
+zino_grazer = zclass(object)
+function zino_grazer:init(obj)
+    self.img = "hitbox_player"
+    self.obj = obj
+    self.a, self.b = 24,24
+    self.bound = false
     self.group = GROUP_PLAYER
-    self.player = player or lstg.player
-    --self.player=lstg.player
-    self.grazed = false
-    self.img = "graze"
-    ParticleStop(self)
-    self.a = 24
-    self.b = 24
-    self.aura = 0
-    self.aura_d = 0
-    self.log_state = self.player.slow
-    self._slowTimer = 0
-    self._pause = 0
+    self.layer = LAYER_TOP
+    self.f = 0
+    self.p = 0
+    self.last_ang = 0
 end
-
-function grazer:frame()
-    local p = self.player
-    local alive = (p.death == 0 or p.death > 90)
-    if alive then
-        self.x = p.x
-        self.y = p.y
-        self.hide = p.hide
-    end
-    if not p.time_stop then
-        if alive then
-            if self.log_state ~= p.slow then
-                self.log_state = p.slow
-                self._pause = 30
-            end
-        end
-        if p.slow == 1 then
-            self._slowTimer = min(self._slowTimer + 1, 30)
-        else
-            self._slowTimer = 0
-        end
-        if self._pause == 0 then
-            self.aura = self.aura + 1.5
-        end
-        self._pause = max(0, self._pause - 1)
-        self.aura_d = 180 * cos(90 * self._slowTimer / 30) ^ 2
-    end
-    --
+function zino_grazer:frame()
+    self.x, self.y = self.obj.x, self.obj.y
     if self.grazed then
-        PlaySound("graze", 0.3, self.x / 200)
+        PlaySound('graze', 0.3, self.x / 200)
         self.grazed = false
-        ParticleFire(self)
-    else
-        ParticleStop(self)
     end
+    if KeyIsDown("slow") then
+        self.f = SnapLerp(self.f,1,0.3)
+    else
+        self.f = SnapLerp(self.f,0,0.3)
+    end
+    if self.obj.protect > 5 then
+        self.p = SnapLerp(self.p,1,0.1)
+    else
+        self.p = SnapLerp(self.p,0,0.1)
+    end
+    local scale = lerp(2,0.75,self.f)
+    self.hscale, self.vscale = scale,scale
+    self.A = lerp(0,255,self.f)
+    if self.obj.dx ~= 0 or self.obj.dy ~= 0 then
+        self.last_ang = Angle(0,0,self.obj.dx,self.obj.dy)
+    end
+    self.rot = InterpolateAngle(self.rot,self.last_ang,0.05)
 end
-
-function grazer:render()
-    object.render(self)
-    SetImageState("player_aura", "", Color(0xC0FFFFFF))
-    Render("player_aura", self.x, self.y, -self.aura + self.aura_d, self.player.lh)
-    SetImageState("player_aura", "", Color(0xC0FFFFFF) * self.player.lh + Color(0x00FFFFFF) * (1 - self.player.lh))
-    Render("player_aura", self.x, self.y, self.aura, 2 - self.player.lh)
-end
-
-function grazer:colli(other)
-    if other.group ~= GROUP_ENEMY and (not (other._graze) or other._inf_graze) then
+function zino_grazer:colli(other)
+    if other.group ~= GROUP_ENEMY and (not other._graze) then
         item.PlayerGraze()
         self.grazed = true
-        if not (other._inf_graze) then
-            other._graze = true
-        end
+        other._graze = true
     end
 end
-
-death_weapon = Class(object)
-
-function death_weapon:init(x, y)
-    self.x = x
-    self.y = y
-    self.group = GROUP_GHOST
-    self.hide = true
+function zino_grazer:render()
+    SetImageState(self.img,"",Color(self.A,255,255,255))
+    Render(self.img, self.x, self.y,self.rot,self.hscale, self.vscale)
+    local scale = lerp(0,2,self.p)
+    local alpha = lerp(0,255,self.p)
+    SetImageState("protect_circle", "mul+add", Color(alpha,255,255,255))
+    Render("protect_circle", self.x, self.y,self.timer,scale,scale)
 end
-
-function death_weapon:frame()
-    if self.timer >= 90 then
-        Del(self)
-    end
-    for i, o in ObjList(GROUP_ENEMY) do
-        if o.colli == true then
-            if Dist(self, o) < 800 and self.timer > 60 then
-                Damage(o, 0.75)
-                if o.dmgsound == 1 then
-                    if o.dmg_factor then
-                        if o.hp > 100 then
-                            PlaySound('damage00', 0.3, o.x / 200)
-                        else
-                            PlaySound('damage01', 0.6, o.x / 200)
-                        end
-                    else
-                        if o.hp > o.maxhp * 0.2 then
-                            PlaySound('damage00', 0.3, o.x / 200)
-                        else
-                            PlaySound('damage01', 0.8, o.x / 200)
-                        end
-                    end
-                end
-            end
-        end
-    end
-    for i, o in ObjList(GROUP_NONTJT) do
-        if o.colli == true then
-            if Dist(self, o) < 800 and self.timer > 60 then
-                Damage(o, 0.75)
-                if o.dmgsound == 1 then
-                    if o.dmg_factor then
-                        if o.hp > 100 then
-                            PlaySound('damage00', 0.3, o.x / 200)
-                        else
-                            PlaySound('damage01', 0.6, o.x / 200)
-                        end
-                    else
-                        if o.hp > o.maxhp * 0.2 then
-                            PlaySound('damage00', 0.3, o.x / 200)
-                        else
-                            PlaySound('damage01', 0.8, o.x / 200)
-                        end
-                    end
-                end
-            end
-        end
-    end
-end
-
-----------------------------------------
----一些自机组件
 
 player_bullet_straight = Class(object)
 
+---@param img string
+---@param x number
+---@param y number
+---@param v number
+---@param angle number
+---@param dmg number
 function player_bullet_straight:init(img, x, y, v, angle, dmg)
     self.group = GROUP_PLAYER_BULLET
     self.layer = LAYER_PLAYER_BULLET
@@ -247,254 +356,71 @@ function player_bullet_straight:init(img, x, y, v, angle, dmg)
         self.rect = true
     end
 end
+function player_bullet_straight:frame()
+    task.Do(self)
+end
 
-player_bullet_hide = Class(object)
-
-function player_bullet_hide:init(a, b, x, y, v, angle, dmg, delay)
-    self.group = GROUP_PLAYER_BULLET
-    self.layer = LAYER_PLAYER_BULLET
+player_death_red = Class(object)
+function player_death_red:init()
+    self.img = "red_player_mask"
+    self.color = color.Red
+    self.A = 0
+    self.layer = LAYER_MENU-200
     self.colli = false
-    self.a = a
-    self.b = b
-    self.x = x
-    self.y = y
-    self.rot = angle
-    self.vx = v * cos(angle)
-    self.vy = v * sin(angle)
-    self.dmg = dmg
-    self.delay = delay or 0
-end
-
-function player_bullet_hide:frame()
-    if self.timer == self.delay then
-        self.colli = true
-    end
-end
-
-player_bullet_trail = Class(object)
-
-function player_bullet_trail:init(img, x, y, v, angle, target, trail, dmg)
-    self.group = GROUP_PLAYER_BULLET
-    self.layer = LAYER_PLAYER_BULLET
-    self.img = img
-    self.x = x
-    self.y = y
-    self.rot = angle
-    self.v = v
-    self.target = target
-    self.trail = trail
-    self.dmg = dmg
-end
-
-function player_bullet_trail:frame()
-    if IsValid(self.target) and self.target.colli then
-        local a = math.mod(Angle(self, self.target) - self.rot + 720, 360)
-        if a > 180 then
-            a = a - 360
-        end
-        local da = self.trail / (Dist(self, self.target) + 1)
-        if da >= abs(a) then
-            self.rot = Angle(self, self.target)
-        else
-            self.rot = self.rot + sign(a) * da
-        end
-    end
-    self.vx = self.v * cos(self.rot)
-    self.vy = self.v * sin(self.rot)
-end
-
-player_spell_mask = Class(object)
-
-function player_spell_mask:init(r, g, b, t1, t2, t3)
-    self.x = 0
-    self.y = 0
-    self.group = GROUP_GHOST
-    self.layer = LAYER_BG + 1
-    self.img = "player_spell_mask"
-    self.bcolor = { ["blend"] = "mul+add", ["a"] = 0, ["r"] = r, ["g"] = g, ["b"] = b }
-    task.New(self, function()
-        for i = 1, t1 do
-            self.bcolor.a = i * 255 / t1
-            task.Wait(1)
-        end
-        task.Wait(t2)
-        for i = t3, 1, -1 do
-            self.bcolor.a = i * 255 / t3
-            task.Wait(1)
-        end
-        Del(self)
+    self.rm = "mul+mul"
+    task.New(self,function()
+        SetFieldInTime(self,player.deathbombtimer*0.3,math.tween.cubicIn,{"A",255})
+        task.Wait(player.deathbombtimer*0.17)
+        PlaySound('pldead00',1,self.x/610)
+        task.Wait(player.deathbombtimer*0.17)
+        SetFieldInTime(self,player.deathbombtimer*0.3,math.tween.cubicOut,{"A", 0})
     end)
 end
-
-function player_spell_mask:frame()
-    task.Do(self)
+player_death_red.frame = task.Do
+function player_death_red:render()
+    SetImageState(self.img,self.rm,self.color)
+    RenderRect(self.img,lstg.world.l,lstg.world.r,lstg.world.b,lstg.world.t)
 end
-
-function player_spell_mask:render()
-    local w = lstg.world
-    local c = self.bcolor
-    SetImageState(self.img, c.blend, Color(c.a, c.r, c.g, c.b))
-    RenderRect(self.img, w.l, w.r, w.b, w.t)
-end
-
-player_death_ef = Class(object)
-
-function player_death_ef:init(x, y)
-    self.x = x
-    self.y = y
-    self.img = "player_death_ef"
-    self.layer = LAYER_PLAYER + 50
-end
-
-function player_death_ef:frame()
-    if self.timer == 4 then
-        ParticleStop(self)
-    end
-    if self.timer == 60 then
-        Del(self)
-    end
-end
-
-deatheff = Class(object)
-
-function deatheff:init(x, y, type_)
-    self.x = x
-    self.y = y
-    self.type = type_
-    self.size = 0
-    self.size1 = 0
-    self.layer = LAYER_TOP - 1
+local EaseOutCubic = math.tween.cubicOut
+player_showlives_death = Class(object)
+function player_showlives_death:init()
+    self.life_count = lstg.var.lifeleft - 1
+    self.lastscale = 1
+    self.scale = 0
+    self.layer = LAYER_TOP
     task.New(self, function()
-        local size = 0
-        local size1 = 0
-        if self.type == "second" then
-            task.Wait(30)
-        end
-        for i = 1, 360 do
-            self.size = size
-            self.size1 = size1
-            size = size + 12
-            size1 = size1 + 8
-            task.Wait(1)
-        end
+        SetFieldInTime(self,15,EaseOutCubic,{'scale', 1})
+        task.Wait(30)
+        SetFieldInTime(self,15,EaseOutCubic,{'lastscale', 0})
+        task.Wait(30)
+        SetFieldInTime(self,15,EaseOutCubic,{'scale', 0})
     end)
 end
-
-function deatheff:frame()
-    task.Do(self)
-    if self.timer > 180 then
-        Del(self)
-    end
-end
-
-function deatheff:render()
-    --稍微减少了死亡反色圈的分割数，视觉效果基本不变，减少性能消耗（原分割数为180）
-    if self.type == "first" then
-        rendercircle(self.x, self.y, self.size, 60)
-        rendercircle(self.x + 35, self.y + 35, self.size1, 60)
-        rendercircle(self.x + 35, self.y - 35, self.size1, 60)
-        rendercircle(self.x - 35, self.y + 35, self.size1, 60)
-        rendercircle(self.x - 35, self.y - 35, self.size1, 60)
-    elseif self.type == "second" then
-        rendercircle(self.x, self.y, self.size, 60)
-    end
-end
-
-----------------------------------------
----加载自机
-
-local PLAYER_PATH = "Library/players/"    --自机插件路径
-local ENTRY_POINT_SCRIPT_PATH = ""          --入口点文件路径
-local ENTRY_POINT_SCRIPT = "__init__.lua"   --入口点文件
-
----检查目录是否存在，不存在则创建
-local function check_directory()
-    lstg.FileManager.CreateDirectory(PLAYER_PATH)
-end
-
----检查一个自机插件包是否合法（有入口点文件）
----该函数会装载自机插件包，然后进行检查，如果不是合法的自机插件包，将会卸载掉
----@param player_plugin_path string @插件包路径
----@return boolean
-local function LoadAndCheckValidity(player_plugin_path)
-    lstg.LoadPack(player_plugin_path)
-    local fs = lstg.FindFiles("", "lua", player_plugin_path)
-    for _, v in pairs(fs) do
-        local filename = string.sub(v[1], string.len(ENTRY_POINT_SCRIPT_PATH) + 1, -1)
-        if filename == ENTRY_POINT_SCRIPT then
-            return true
+player_showlives_death.frame = task.Do
+function player_showlives_death:render()
+    local lifescale = 1*self.scale
+    local base_ang = 90 * self.scale
+    SetImageState("life_bg", "mul+add", Color(150,255,0,0))
+    SetImageState("life_fill","",color.White)
+    if self.life_count >= 0 then
+        local da = 360/(self.life_count+1)
+        for i=1, self.life_count do
+            local pos = Vector(player.x,player.y) + (Vector.fromAngle(base_ang + i * da) * (64*self.scale))
+            Render('life_bg', pos.x ,pos.y,0,lifescale,lifescale)
+            Render('life_fill', pos.x ,pos.y,0,lifescale,lifescale)
         end
-    end
-    lstg.UnloadPack(player_plugin_path)
-    lstg.Log(4, "\"" .. player_plugin_path .. "\"不是有效的自机插件包，没有入口点文件\"" .. ENTRY_POINT_SCRIPT .. "\"")
-    return false
-end
-
----储存自机的信息表
----@type table @{{displayname,classname,replayname}, ... }
-player_list = {}
-
----对自机表进行排序
-local function PlayerListSort()
-    local playerDisplayName = {}--{displayname, ... }
-    local pl2id = {}--{[displayname]=player_list_pos, ... }
-    for i, v in ipairs(player_list) do
-        table.insert(playerDisplayName, v[1])
-        pl2id[v[1]] = i
-    end
-    table.sort(playerDisplayName)
-    local id2pl = {}--{[pos]=player_list_pos}
-    for i, v in ipairs(playerDisplayName) do
-        id2pl[i] = pl2id[v]
-    end
-    local tmp_player_list = {}
-    for i, v in ipairs(id2pl) do
-        tmp_player_list[i] = player_list[v]
-    end
-    player_list = tmp_player_list
-end
-
----添加自机信息到自机信息表
----@param displayname string @显示在菜单中的名字
----@param classname string @全局中的自机类名
----@param replayname string @显示在rep信息中的名字
----@param pos number @插入的位置
----@param _replace boolean @是否取代该位置
-function AddPlayerToPlayerList(displayname, classname, replayname, pos, _replace)
-    if _replace then
-        player_list[pos] = { displayname, classname, replayname }
-    elseif pos then
-        table.insert(player_list, pos, { displayname, classname, replayname })
-    else
-        table.insert(player_list, { displayname, classname, replayname })
+        local pos = Vector(player.x,player.y) + (Vector.fromAngle(base_ang) * (64*self.scale))
+        Render('life_bg', pos.x ,pos.y,0,lifescale,lifescale)
+        Render('life_fill', pos.x ,pos.y,0,lifescale * self.lastscale,lifescale * self.lastscale)
     end
 end
+Event:new('onPlayerDeath', function()
+    local self = player
+    misc.ShakeScreen(10, 30)
+    New(player_showlives_death)
+end,1, 'DeathEffect')
+Event:new('onPlayerHit', function()
+    New(player_death_red)
+end,1,'HitEffect')
 
----加载自机包
-function LoadPlayerPacks()
-    player_list = {}--先清空一次
-
-    check_directory()
-    local fs = lstg.FindFiles(PLAYER_PATH, "zip", "")--罗列插件包
-    for _, v in pairs(fs) do
-        --尝试加载插件包并检查插件包合法性
-        local result = LoadAndCheckValidity(v[1])
-        --加载入口点脚本
-        if result then
-            lstg.DoFile(ENTRY_POINT_SCRIPT, v[1])
-        end
-    end
-
-    PlayerListSort()
-end
-
---LoadPlayerPacks()
-
-Include'THlib/player/reimu/reimu.lua'
-AddPlayerToPlayerList('Hakurei Reimu','reimu_player','Reimu')
-
-Include'THlib/player/marisa/marisa.lua'
-AddPlayerToPlayerList('Kirisame Marisa','marisa_player','Marisa')
-
-Include'THlib/player/sakuya/sakuya.lua'
-AddPlayerToPlayerList('Izayoi Sakuya','sakuya_player','Sakuya')
+Include(path.."haiji/haiji.lua")

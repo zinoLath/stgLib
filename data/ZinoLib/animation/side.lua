@@ -119,8 +119,8 @@ function M:co(manager)
 end
 --the render function
 function M:render(obj,manager)
-    local blend = obj.rm or ""
-    local color = obj.color or ""
+    local blend = obj._blend or ""
+    local color = obj._color or Color(255,255,255,255)
     SetImageState(self.img,blend,color)
     Render(self.img,obj.x,obj.y,obj.rot,obj.hscale,obj.vscale)
 end

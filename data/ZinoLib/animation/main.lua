@@ -74,15 +74,16 @@ function M:sideAnim()
         end
     end
 end
-local function deepcopy(tb)
-    local ret = setmetatable({  }, getmetatable(tb))
+local function deepcopy(tb,id)
+    local ret = {}
     for k,v in pairs(tb) do
         if type(v) ~= "table" then
             ret[k] = v
         else
-            ret[k] = deepcopy(v)
+            ret[k] = deepcopy(v,id)
         end
     end
+    setmetatable(ret, getmetatable(tb))
     return ret
 end
 function M:addAnimation(anim,name)
@@ -101,6 +102,9 @@ function M:playAnim(name,...)
     self.currentID = name
     --start = self,manager,...
     self.anims[name]:start(self,...)
+end
+function M:copy()
+    return setmetatable(softcopy(self),M.mt)
 end
 frame_anim = Include(path.."frame.lua")
 side_anim = Include(path.."side.lua")

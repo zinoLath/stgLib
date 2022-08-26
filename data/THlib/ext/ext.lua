@@ -284,6 +284,7 @@ function RenderFunc()
      then
         stage.current_stage:render()
         ObjRender()
+        stage.current_stage:postrender()
         SetViewMode("world")
         DrawCollider()
         if Collision_Checker then

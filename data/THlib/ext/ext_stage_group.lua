@@ -18,6 +18,7 @@ function stage.group.New(title, stages, name, item_init, allow_practice, difficu
         local s = stage.New(stages[i])
         s.frame = stage.group.frame
         s.render = stage.group.render
+        s.postrender = stage.group.postrender
         s.number = i
         s.group = sg
         sg[stages[i]] = s
@@ -52,6 +53,7 @@ function stage.group.AddStage(groupname, stagename, item_init, allow_practice)
             s.frame = stage.group.frame
         end
         s.render = stage.group.render
+        s.postrender = stage.group.postrender
         s.number = sg.number
         s.group = sg
         sg[stagename] = s
@@ -207,14 +209,16 @@ function stage.group.frame_sc_pr(self)
         lstg.var.timeslow = nil
     end
 end
-
 function stage.group.render(self)
+    --RenderClearViewMode(Color(255, 32, 0, 0))
+end
+function stage.group.postrender(self)
+    SetViewMode 'ui'
     ui.DrawFrame(self)
     if lstg.var.init_player_data then
         ui.DrawScore(self)
     end
     SetViewMode 'world'
-    RenderClearViewMode(Color(255, 32, 0, 0))
 end
 
 function stage.group.Start(group)

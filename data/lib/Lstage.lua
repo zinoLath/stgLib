@@ -13,6 +13,8 @@ function stage.frame(self)
 end
 function stage.render(self)
 end
+function stage.postrender(self)
+end
 function stage.del(self)
 end
 
@@ -20,6 +22,7 @@ function stage.New(stage_name, as_entrance, is_menu)
     local result = { init = stage.init,
                      del = stage.del,
                      render = stage.render,
+                     postrender = stage.postrender,
                      frame = stage.frame,
     }
     if as_entrance then

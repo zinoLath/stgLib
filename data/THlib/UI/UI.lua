@@ -1,7 +1,8 @@
 ui = {}
+local path = GetCurrentScriptDirectory()
+LoadImageFromFile("HUD_image",path ..  "HUD.png",false,0,0)
 function ui:DrawFrame()
-
-    RenderClear(Color(255, 0, 64, 0))
+    RenderRect("HUD_image", screen.dx, screen.width-screen.dx, screen.dy, screen.height-screen.dy)
 end
 function ui:DrawScore()
 

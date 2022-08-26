@@ -75,15 +75,18 @@ function CopyImage(newname, img)
 end
 
 function LoadImageGroup(prefix, texname, x, y, w, h, cols, rows, a, b, rect)
+    local ret = {}
     for i = 0, cols * rows - 1 do
-        LoadImage(prefix .. (i + 1), texname, x + w * (i % cols), y + h * (int(i / cols)), w, h, a or 0, b or 0, rect or false)
+        local img = LoadImage(prefix .. (i + 1), texname, x + w * (i % cols), y + h * (int(i / cols)), w, h, a or 0, b or 0, rect or false)
+        table.insert(ret,img)
     end
+    return ret
 end
 
 function LoadImageFromFile(teximgname, filename, mipmap, a, b, rect)
     LoadTexture(teximgname, filename, mipmap)
     local w, h = GetTextureSize(teximgname)
-    LoadImage(teximgname, teximgname, 0, 0, w, h, a or 0, b or 0, rect)
+    return LoadImage(teximgname, teximgname, 0, 0, w, h, a or 0, b or 0, rect)
 end
 
 function LoadAniFromFile(texaniname, filename, mipmap, n, m, intv, a, b, rect)
@@ -95,7 +98,7 @@ end
 function LoadImageGroupFromFile(texaniname, filename, mipmap, n, m, a, b, rect)
     LoadTexture(texaniname, filename, mipmap)
     local w, h = GetTextureSize(texaniname)
-    LoadImageGroup(texaniname, texaniname, 0, 0, w / n, h / m, n, m, a, b, rect)
+    return LoadImageGroup(texaniname, texaniname, 0, 0, w / n, h / m, n, m, a, b, rect)
 end
 
 function LoadTTF(ttfname, filename, size)

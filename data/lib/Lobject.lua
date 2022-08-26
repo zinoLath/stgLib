@@ -116,6 +116,11 @@ function zclass(base, ...)
     local arg = {...}
     local result = baseclass(base)
     result[".render"] = true
+    for k, v in pairs(base) do
+        if type(k) ~= "number" then
+            result[k] = v
+        end
+    end
     for k,define in ipairs(arg) do
         if type(define) == "table" then
             for k, v in pairs(define) do
