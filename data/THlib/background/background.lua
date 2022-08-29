@@ -209,7 +209,7 @@ end
 DEBUG_BG = Class(object)
 function DEBUG_BG:init(color)
     self.img = CopyImage("bg_white","white")
-    self.color = color or Color(255,0,0,0)
+    self.color = color or Color(255,32,0,0)
     self.bound = false
     self.group = GROUP_GHOST
     self.layer = LAYER_BG

@@ -76,6 +76,9 @@ function stage.group.frame(self)
     if not lstg.var.init_player_data then
         error('Player data has not been initialized. (Call function item.PlayerInit.)')
     end
+    if self.timer == 0 then
+        New(ui,self)
+    end
     --
     if lstg.var.lifeleft <= -1 then
         if ext.replay.IsReplay() then
@@ -213,12 +216,7 @@ function stage.group.render(self)
     --RenderClearViewMode(Color(255, 32, 0, 0))
 end
 function stage.group.postrender(self)
-    SetViewMode 'ui'
-    ui.DrawFrame(self)
-    if lstg.var.init_player_data then
-        ui.DrawScore(self)
-    end
-    SetViewMode 'world'
+
 end
 
 function stage.group.Start(group)

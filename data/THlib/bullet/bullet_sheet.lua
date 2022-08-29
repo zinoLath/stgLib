@@ -50,6 +50,9 @@ function M.parse(string, path, ret)
         if v.center then
             SetImageCenter(res, eval(v.center))
         end
+        if v.size then
+            SetImageScale(res, v.size/json.default_size)
+        end
         for _k,_v in pairs(v) do
             ret.shots[k][_k] = ret.shots[k][_k] or _v
         end

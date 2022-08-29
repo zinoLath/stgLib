@@ -40,9 +40,9 @@ struct PS_Output
     float4 col : SV_Target;
 };
 
-#define RADCOUNT 8
+#define RADCOUNT 16
 
-static const float invradcount = 1.0 / RADCOUNT ;
+static const float invradcount = 90.0/RADCOUNT;
 
 PS_Output main(PS_Input input)
 {
@@ -50,9 +50,10 @@ PS_Output main(PS_Input input)
     float4 tex_col = screen_texture.Sample(screen_texture_sampler, input.uv);
     float4 orig_col = tex_col;
     for (float i = 0; i < RADCOUNT; i++){
-
         tex_col.a += screen_texture.Sample(screen_texture_sampler, input.uv + float2(offset * cos(my_PI * i * 2.0 / RADCOUNT), offset * sin(my_PI * i * 2.0 / RADCOUNT))).a * invradcount;
+        tex_col.a = min(tex_col.a, color.a);
     }
+    tex_col.a = min(tex_col.a + orig_col.a, 1.0f);
     tex_col.rgb = lerp(color.rgb,orig_col.rgb,orig_col.a);
     tex_col.rgb *= tex_col.a;
 

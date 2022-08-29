@@ -22,14 +22,16 @@ local sheet_handler = Include(path .. "bullet_sheet.lua")
 local shot_sheet = sheet_handler.parse()
 sheet_handler.optimize_sheet(shot_sheet)
 
-local centerDefaultColor = Color(255,255,255,255)
+local centerDefaultColor = Color(255,0,255,255)
 bullet = zclass(object)
-function bullet:init(img,color,subcolor)
+bullet.default_function = 0x10
+function bullet:init(img,color,subcolor,blend)
     local bullet_style = shot_sheet.shots[img]
     self.img = bullet_style[1]
     self.imgid = img
     self._color = color
     self._subcolor = subcolor or centerDefaultColor
+    self._blend = blend
     self.layer = LAYER_ENEMY_BULLET
     self.group = GROUP_ENEMY_BULLET
 end
@@ -39,7 +41,7 @@ function bullet:frame()
         local j = (self.timer-self.d_base)/(self.dt-self.d_base)
         local i = EaseOutCubic(j)
         local scale = lerp(3.5,1,i)*2.25
-        self.hscale,self.vscale = scale*self._scale, scale*self._scale
+        self.hscale,self.vscale = scale, scale
         self._a = lerp(0,255 or self._alpha,i)
     end
 end
@@ -54,10 +56,10 @@ end
 function bullet:kill()
     --New(item_faith_minor, self.x, self.y)
     SpawnPIV(self.x,self.y)
-    New(BulletBreak, self.x, self.y, self.color)
+    New(BulletBreak, self.x, self.y, self._color)
 end
 function bullet:del()
-    New(BulletBreak, self.x, self.y, self.color)
+    New(BulletBreak, self.x, self.y, self._color)
 end
 function bullet:delay(time)
     self.dt = time + self.timer
@@ -72,6 +74,7 @@ function bullet:setSize(size)
 end
 
 BulletBreak = zclass(object)
+CopyImage("zbreak","white")
 ---初始化消弹效果
 ---@param x number
 ---@param y number 位置
@@ -98,8 +101,8 @@ function BulletBreak:frame()
 end
 
 straight = zclass(bullet)
-function straight:init(type, color, x, y, rot, speed, omiga, blend, delaytime, indes)
-    bullet.init(self,type, color, blend)
+function straight:init(type, color, subcolor, x, y, rot, speed, omiga, blend, delaytime, indes)
+    bullet.init(self,type, color, subcolor, blend)
     bullet.delay(self, delaytime or 7)
     self.x, self.y = x,y
     SetV(self, speed, rot)

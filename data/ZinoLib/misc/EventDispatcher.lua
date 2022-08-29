@@ -14,12 +14,14 @@ function M:new(event,func,name)
         func = func,
         name = name
     }
-    table.insert(self.eventList[event].events,ret)
+    table.insert(M.eventList[event].events,ret)
     return ret
 end
 function M:call(event,...)
-    local ev = self.eventList[event]
-    for k,v in pairs(ev.events) do
-        v.func(...)
+    local ev = M.eventList[event]
+    if ev then
+        for k,v in pairs(ev.events) do
+            v.func(...)
+        end
     end
 end

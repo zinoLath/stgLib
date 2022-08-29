@@ -41,7 +41,7 @@ end
 OriginalLoadTexture = LoadTexture
 function LoadTexture(tex,...)
     OriginalLoadTexture(tex,...)
-    SetTextureSamplerState(tex,"point+clamp")
+    --SetTextureSamplerState(tex,"point+clamp")
     return tex
 end
 ----------------------------------------

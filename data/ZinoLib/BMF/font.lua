@@ -12,32 +12,43 @@ typedef struct {
 } zfontrender;
 ]]
 local GCSD = GetCurrentScriptDirectory()
+local bytetofloat = 1/255
 M.states = {}
 M.fonts = {}
 M.charlist = {
-    ' ', '!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.',
-    '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=',
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '!', '"', '#', '$',
+    '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=',
     '>', '?', '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
     'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '[',
     '\\',']', '^', '_', '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
     'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y',
     'z', '{', '|', '}', '~'
 }
+local ctdefault = Color(255,255,255,255)
+local cbdefault = Color(255,255,255,255)
+CreateRenderTarget("BMF_FONT_BUFFER")
+CreateRenderTarget("BMF_FONT_BORDER")
+LoadFX("BMF_BORDER_SHADER", GCSD .. "shader.fx")
+LoadFX("BMF_EMPTY_SHADER", GCSD .. "empty.fx")
+
 for k,v in ipairs(M.charlist) do
     M.charlist[v] = k
 end
 --
 M.font_functions = {}
-function M:loadFont(name,path,imgpath)
+function M:loadFont(name,path)
     --local data = xml:ParseXmlText(FU:getStringFromFile(path))
     local handler = xml2lua.dom:new()
     local parser = xml2lua.parser(handler)
-    parser:parse(LoadTextFile(path))
+    parser:parse(LoadTextFile(path .. name .. ".fnt"))
     local data = handler.root
-    local str, id = PrintTableRecursive(data)
-    Print("FONT: "..name)
-    Print(id)
-    local tex = LoadTexture("bmftexture:" .. name, imgpath)
+    Print("BMFFONT LOADED: "..name)
+    local tex_name = "bmftexture:" .. name
+    local textures = {}
+    for k,_v in pairs(data._children[3]._children) do
+        local v = _v._attr
+        textures[v.id] = LoadTexture(tex_name .. v.id, path .. v.file)
+    end
     local ret = {}
     local chars = {}
     local function getValueN(tb, id)
@@ -51,14 +62,17 @@ function M:loadFont(name,path,imgpath)
             width = getValueN(v, '@width'), height = getValueN(v, '@height'),
             xoffset = getValueN(v, '@xoffset'), yoffset = getValueN(v, '@yoffset'),
             xadvance = getValueN(v, '@xadvance'),
-            sprite = LoadImage(name .. v['id'], "bmftexture:" .. name, getValueN(v, '@x'),getValueN(v, '@y'),
-                    getValueN(v, '@width'), getValueN(v, '@height'),0,0,false),
-            sprite_name = 'philosopher_' .. v['id']
+            sprite_name = name .. v['id']
         }
-        chars[M.charlist[string.char(getValueN(v, '@id'))]] = chars[string.char(getValueN(v, '@id'))]
+        local curchr = chars[string.char(getValueN(v, '@id'))]
+        curchr.sprite =
+        LoadImage(name .. v['id'], textures[v.page], curchr.x,curchr.y,curchr.width, curchr.height,0,0,false)
+        if M.charlist[string.char(getValueN(v, '@id'))] then
+            chars[M.charlist[string.char(getValueN(v, '@id'))]] = chars[string.char(getValueN(v, '@id'))]
+        end
         local spr = chars[string.char(getValueN(v, '@id'))].sprite
-        --SetImageCenter(name .. v['@id'],0,getValueN(v, '@height'))
-        SetImageCenter(name .. v['id'],0,getValueN(v, '@height'))
+        SetImageCenter(spr,0,getValueN(v, '@height'))
+        --SetImageCenter(name .. v['id'],0,getValueN(v, '@height')*0)
     end
     local info = data._children[1]._attr
     local common = data._children[2]._attr
@@ -104,75 +118,68 @@ function M.font_functions:setMonospace(monospace, mono_exception)
     end
     return self
 end
-function M.font_functions:getSize(str,scale)
-    local cursor = Vector(0,self.base)
+function M.font_functions:getSize(str,scale,offsetfunc)
+    local cursor = Vector(0,-self.base*scale/2)
     local chars = self.chars
-    local cwidth = 0
-    local cxoff = 0
-    local cxadvance = 0
-    local maxheight = 0
-    local maxbottom = 0
-    local linecount = 1
-    local move_scale = 1
     local base_c = cursor:clone()
     local monospace = self.monospace
+    local min_x,max_x,min_y,max_y = 0,0,0,0
     for i=1, #str do
         local c = str:sub(i,i)
         if c ~= "\n" then
             local char = chars[c]
+            local width = char.width*scale * GetImageScale()
             if monospace and not self.mono_exception[c] then
-                local current_space = monospace
-                cursor.x = cursor.x + current_space/2
-                cxadvance = current_space
-                cwidth = current_space
-            else
-                cwidth = char.width
-                cxadvance = char.xadvance
-                cursor.x = cursor.x + cxadvance/2
+                width = monospace*scale*0.5
             end
-            cxoff = char.xoffset
-            maxheight = math.max(maxheight,char.height/2 - char.yoffset)
-            maxbottom = math.min(maxbottom,char.height/-2 + char.yoffset)
+            local height = char.height*scale * GetImageScale()
+            local x,y = cursor.x,
+                        cursor.y - char.yoffset*scale
+            min_x = math.min(min_x,x)
+            max_x = math.max(max_x,x + width)
+            min_y = math.min(min_y,y)
+            max_y = math.max(max_y,y + height)
+            if monospace and not self.mono_exception[c] then
+                cursor.x = cursor.x + monospace*scale*0.5
+            else
+                cursor.x = cursor.x + char.xadvance*scale*0.5
+            end
         else
-            base_c.y = base_c.y - self.lineHeight
-            linecount = linecount + 1
+            base_c.y = base_c.y + self.lineHeight*scale
             cursor = base_c
             cursor.x = 0
         end
     end
-    return (cursor.x - cxadvance + cwidth)*scale*move_scale, (linecount * self.lineHeight)*scale*move_scale
+    return max_x - min_x,  max_y - min_y
 end
-function M.font_functions:render(str,x,y,scale,halign,valign,rm,offsetfunc)
+local white = Color(255,255,255,255)
+function M.font_functions:render(str,x,y,scale,halign,valign,color,offsetfunc)
     halign = halign or "center"
     valign = valign or "vcenter"
     local move_scale = 1
     if lstg.viewmode ~= "ui" then
-        move_scale = 0.44444444444444444
+        move_scale = 0.7
     end
-    local wd, hg = self:getSize(str,scale)
-    local cursor = Vector(x,y - self.base*scale/2)
+    local wd, hg = self:getSize(str,scale*move_scale)
+    local cursor = Vector(x,y - self.base*scale*move_scale/2)
     local vec = Vector(0,0)
     if halign == "center" then
         cursor.x = cursor.x - wd/2
+    elseif halign == "left" then
+        cursor.x = cursor.x
     elseif halign == 'right' then
         cursor.x = cursor.x - wd
     end
-    if valign == "bottom" then
+    if valign == "top" then
         cursor.y = cursor.y + hg
     elseif valign == 'vcenter' then
         cursor.y = cursor.y + hg/2
-    elseif valign == 'top' then
+    elseif valign == 'bottom' then
         cursor.y = cursor.y
     end
     local base_c = cursor:clone()
     local chars = self.chars
     local monospace = self.monospace
-    local _rm = rm
-    if type(rm) == "string" then
-        _rm = string.format("BMFSTATE:%s", rm)
-    elseif rm then
-        _rm = rm:getName()
-    end
     for i=1, #str do
         local c = str:sub(i,i)
         if c ~= "\n" then
@@ -181,11 +188,14 @@ function M.font_functions:render(str,x,y,scale,halign,valign,rm,offsetfunc)
             if offsetfunc then
                 vec = offsetfunc(i,c,str)
             end
-            if _rm then
-                char.sprite:setRenderMode(_rm)
+            if color then
+                SetImageColor(char.sprite,color)
             end
             Render(char.sprite,cursor.x + offset + vec.x,cursor.y - char.yoffset*scale*move_scale + vec.y,
                     0,scale,scale,0)
+            if color then
+                SetImageColor(char.sprite,white)
+            end
             if monospace and not self.mono_exception[c] then
                 local current_space = monospace
                 cursor.x = cursor.x + current_space/2*scale*move_scale
@@ -197,6 +207,20 @@ function M.font_functions:render(str,x,y,scale,halign,valign,rm,offsetfunc)
             cursor = base_c
         end
     end
+end
+function M.font_functions:renderOutline(str,x,y,scale,halign,valign,color,offsetfunc,outline_size,outline_color,blend)
+    blend = blend or "mul+alpha"
+    PushRenderTarget("BMF_FONT_BUFFER")
+    RenderClear(Color(0x00000000))
+    self:render(str,x,y,scale,halign,valign,color,offsetfunc)
+    PopRenderTarget("BMF_FONT_BUFFER")
+    local _color = outline_color
+    local _size = outline_size
+    lstg.PostEffect("BMF_BORDER_SHADER", "BMF_FONT_BUFFER", 6, "mul+alpha",
+            {
+                { _color.r*bytetofloat, _color.g*bytetofloat, _color.b*bytetofloat, _color.a*bytetofloat },
+                { _size, 0, 0, 0}
+            })
 end
 M.tag_funcs = {}
 M.tag_funcs.state = {
@@ -323,9 +347,15 @@ function M:pool(text,init_state,width)
     local borderList = {}
     local i = 1
     local si = 1
+    local max_border_size = 0
+    local first_border_size = 0
     for k,v in ipairs(glyphList) do
         v.id = k
         stateList[v.state].border_size = stateList[v.state].border_size or 0
+        max_border_size = math.max(max_border_size,stateList[v.state].border_size)
+        if k == 1 then
+            first_border_size = stateList[v.state].border_size
+        end
         stateList[v.state].border_color = stateList[v.state].border_color or Color(255,0,0,0)
         if v.state ~= si then
             for _k,_v in ipairs(borderList) do
@@ -345,17 +375,35 @@ function M:pool(text,init_state,width)
         end
         table.insert(borderList[i].glyphList,v)
     end
-    local ret = {glyphList = glyphList, stateList = stateList, borderList = borderList}
+    local ret = {glyphList = glyphList, stateList = stateList, borderList = borderList, max_border = max_border_size, first_border = first_border_size}
     return ret
 end
-local ctdefault = Color(255,255,255,255)
-local cbdefault = Color(255,255,255,255)
-CreateRenderTarget("BMF_FONT_BUFFER")
-CreateRenderTarget("BMF_FONT_BORDER")
-LoadFX("BMF_BORDER_SHADER", GCSD .. "shader.fx")
-LoadFX("BMF_EMPTY_SHADER", GCSD .. "empty.fx")
+function M:getPoolRect(pool)
+    local max_x = 0
+    local min_x = 0
+    local min_y = 0
+    local max_y = 0
+    for k,v in ipairs(pool.glyphList) do
+        local state = pool.stateList[v.state]
+        local char = state.font.chars[M.charlist[v._char]]
+        min_x = math.min(min_x, v.x)
+        max_x = math.max(max_x, v.x + char.width * GetImageScale())
+        min_y = math.min(min_y, v.y)
+        max_y = math.max(max_y, v.y + char.height * GetImageScale())
+    end
+    return min_x, max_x, min_y, max_y
+end
+function M:getPoolWidth(pool)
+    local x1, x2, y1, y2 = M:getPoolRect(pool)
+    return x2-x1
+end
+local render_command = {}
+local border_command = {
+    { 0, 0, 0, 0 },
+    { 0, 0, 0, 0}
+}
 function M:renderPool(pool,x,y,scale,count,timer,imgscale)
-    local render_command = {}
+    table.clear(render_command)
     count = count or 9999999999
     timer = timer or 0
     imgscale = imgscale or 1
@@ -378,21 +426,22 @@ function M:renderPool(pool,x,y,scale,count,timer,imgscale)
             render_command.botcolor = state.color_bot or cbdefault
             render_command.rot = 0
             if state.render_funcs then
-                for _k,_funcs in pairs(state.render_funcs) do
+                for _,_funcs in pairs(state.render_funcs) do
                     _funcs(render_command,state,char,timer,v)
                 end
             end
-            SetImageSubColor(render_command.img, render_command.topcolor,render_command.topcolor,render_command.botcolor,render_command.botcolor)
+            SetImageState(render_command.img, "", render_command.topcolor,render_command.topcolor,render_command.botcolor,render_command.botcolor)
             Render(render_command.img,render_command.x,render_command.y,render_command.rot,render_command.scale,render_command.scale)
         end
         PopRenderTarget("BMF_FONT_BUFFER")
         local color = _v.color
         local size = _v.size
-        lstg.PostEffect("BMF_BORDER_SHADER", "BMF_FONT_BUFFER", 6, "mul+alpha",
-                {
-                    { color.r, color.g, color.b, color.a },
-                    { size, 0, 0, 0}
-                })
+        border_command[1][1] = color.r * bytetofloat
+        border_command[1][2] = color.g * bytetofloat
+        border_command[1][3] = color.b * bytetofloat
+        border_command[1][4] = color.a * bytetofloat
+        border_command[2][1] = size
+        lstg.PostEffect("BMF_BORDER_SHADER", "BMF_FONT_BUFFER", 6, "mul+alpha", border_command)
     end
 end
 function M.font_functions:clone()

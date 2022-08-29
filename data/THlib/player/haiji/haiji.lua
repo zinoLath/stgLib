@@ -17,7 +17,7 @@ haiji_manager:addAnimation(haiji_std_anim,"stand")
 haiji_player.init = MCDelegate.new()
 haiji_player.init:addEvent(player_class.init, "player.init")
 haiji_player.init:addEvent(function(self)
-    haiji_manager:copy():attachObj(self)
+    haiji_manager:attachObj(self)
     self.uspeed = 5
     self.fspeed = 2.5
 end, "haiji.init")

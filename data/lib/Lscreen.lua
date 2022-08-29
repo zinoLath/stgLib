@@ -52,6 +52,8 @@ local RAW_DEFAULT_WORLD = {--this one is the "standard" one that will always be 
     pl = -pw/2, pr = pw/2, pb = -ph/2, pt = ph/2,
 
     world = 15,
+
+    scale = stg_scale
 }
 
 local DEFAULT_WORLD = deepcopy(RAW_DEFAULT_WORLD)
@@ -73,7 +75,7 @@ function ResetScreen(no_reset_world)
     screen.vScale = setting.resy / screen.height
     screen.resScale = setting.resx / setting.resy
     screen.scale = math.min(screen.hScale, screen.vScale)
-    screen.scalefrom480 = screen.width/480
+    screen.scalefrom480 = screen.width/640
     if screen.resScale >= (screen.width / screen.height) then
         screen.dx = (setting.resx - screen.scale * screen.width) * 0.5
         screen.dy = 0

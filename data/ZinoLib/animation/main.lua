@@ -22,8 +22,10 @@ function M.new(side)
     return self
 end
 function M:attachObj(obj)
-    self.obj = obj
-    obj.animManager = self
+    local copy = self:copy()
+    copy.obj = obj
+    obj.animManager = copy
+    return copy
 end
 function M:update()
     if self.pause then
@@ -104,7 +106,10 @@ function M:playAnim(name,...)
     self.anims[name]:start(self,...)
 end
 function M:copy()
-    return setmetatable(softcopy(self),M.mt)
+    local ret = setmetatable(softcopy(self),M.mt)
+    ret.cos = deepcopy(self.cos)
+    ret.data = deepcopy(self.data)
+    return ret
 end
 frame_anim = Include(path.."frame.lua")
 side_anim = Include(path.."side.lua")

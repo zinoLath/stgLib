@@ -1,6 +1,7 @@
 {
-  "load" : "function M.sdsquare(i)\n    local w, h = 64,64\n    local cols = 4\n    return M.rectXY(w * (i % cols), h * (int(i / cols)),w,h)\nend",
+  "load" : "function M.sdsquare(i)\n    i = i-1\n    local w, h = 64,64\n    local cols = 4\n    return M.rectXY(w * (i % cols), h * (int(i / cols)),w,h)\nend",
   "default_img": "bullet",
+  "default_size": 64,
   "images" : {
     "bullet" : "bullet.png"
   },
@@ -8,78 +9,79 @@
     "amulet": {
       "rect": "M.sdsquare(1)",
       "hitsize": 10,
-      "default_size": 24
+      "size": 24
     },
     "arrow": {
       "rect": "M.sdsquare(2)",
-      "hitsize": 3,
-      "default_size": 48,
+      "hitsize": 10,
+      "size": 48,
       "center": "49,32"
     },
     "circle_border": {
       "rect": "M.sdsquare(3)",
       "hitsize": 10,
-      "default_size": 24
+      "size": 24
     },
     "circle": {
       "rect": "M.sdsquare(4)",
       "hitsize": 10,
-      "default_size": 24
+      "size": 24
     },
     "dot": {
       "rect": "M.sdsquare(5)",
       "hitsize": 3,
-      "default_size": 48
+      "size": 48
     },
     "small_ellipse": {
       "rect": "M.sdsquare(6)",
       "hitsize": 7,
-      "default_size": 24
+      "size": 24
     },
     "ellipse": {
       "rect": "M.sdsquare(6)",
       "hitsize": 7,
-      "default_size": 36
+      "size": 36
     },
     "heart": {
       "rect": "M.sdsquare(7)",
       "hitsize": 8,
-      "default_size": 24
+      "size": 24
     },
     "ice": {
       "rect": "M.sdsquare(8)",
       "hitsize": 7,
-      "default_size": 24
+      "size": 24
     },
     "double": {
       "rect": "M.sdsquare(9)",
       "hitsize": 7,
-      "default_size": 24
+      "size": 24
     },
     "scale": {
       "rect": "M.sdsquare(10)",
       "hitsize": 10,
-      "default_size": 24
+      "size": 32,
+      "center": "23,32"
     },
     "square": {
       "rect": "M.sdsquare(11)",
       "hitsize": 16,
-      "default_size": 24
+      "size": 24
     },
     "star": {
       "rect": "M.sdsquare(12)",
       "hitsize": 13,
-      "default_size": 36
+      "size": 36
     },
     "snowflake": {
       "rect": "M.sdsquare(13)",
       "hitsize": 10,
-      "default_size": 24
+      "size": 24
     },
     "bubble": {
       "rect": "M.sdsquare(14)",
       "hitsize": 10,
-      "default_size": 48
+      "size": 48
     }
   }
 }

@@ -4,10 +4,11 @@ local lerp = math.lerp
 local event = lstg.eventDispatcher
 
 
-boss = Class(base_enemy)
+boss = zclass(base_enemy)
 local M = boss
+M.patterns = {}
 function M:init(cards)
-    base_enemy.init(self,999999,false)
+    base_enemy.init(self,999999,false,self.class.anim_manager)
     self.colli = true
     self.group = GROUP_ENEMY
     self.cardlist = { }
@@ -84,7 +85,8 @@ function M:card_coroutine()
     if otherb then
         task.Clear(otherb)
     end
-    CallClass(self, "setBaseHP", card.hp,otherb)
+    CallClass(self, "setBaseHP", card.hp, otherb)
+    Print(card.hp)
     if otherb then
         CallClass(otherb, "setBaseHP", card.hp,self)
     end
@@ -171,11 +173,6 @@ function M:endHistory(card)
     lstg.var.score = lstg.var.score + self.bonus
 end
 function M:killChildren()
-    for i, o in ObjList(GROUP_FAMILIAR) do
-        if IsValid(o) and not o.killflag then
-            Kill(o)
-        end
-    end
     for k,o in pairs(self._servants) do
         if IsValid(o) and not o.killflag then
             Kill(o)
@@ -201,7 +198,7 @@ end
 local voidfunc = function()  end
 M.card = {}
 _sc_table = {}
-function M.card.new(name,timer,armor,invult,hp,is_survival,class)
+function M.card:new(name,timer,armor,invult,hp,is_survival,class)
     local ret = {}
     ret.time = timer*60; ret.armor = armor*60; ret.invult = invult*60;
     ret.hp = hp; ret.name = name;

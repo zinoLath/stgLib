@@ -1,7 +1,7 @@
 local M = Class()
 local path = GetCurrentScriptDirectory()
 CopyImage("dialogue_bound_viewer", "white")
-dialogue_font = BMF:loadFont("Barmeno-Bold",font_path.."philosopher.fnt",font_path.."philosopher_0.png")
+dialogue_font = BMF:loadFont("philosopher",font_path)
 dialogue_manager = M
 sample_dialogue =
 [[

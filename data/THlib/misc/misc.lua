@@ -31,20 +31,6 @@ misc = {}
 
 --TODO
 
----绘制圆环
----用于绘制 bossring
-function misc.RenderRing(img, x, y, r1, r2, rot, n, nimg)
-    local da = 360 / n
-    for i = 1, n do
-        local a = rot - da * i
-        Render4V(img .. ((i - 1) % nimg + 1),
-                 r1 * cos(a + da) + x, r1 * sin(a + da) + y, 0.5,
-                 r2 * cos(a + da) + x, r2 * sin(a + da) + y, 0.5,
-                 r2 * cos(a) + x, r2 * sin(a) + y, 0.5,
-                 r1 * cos(a) + x, r1 * sin(a) + y, 0.5)
-    end
-end
-
 ---绘制Boss血条亮的部分
 function misc.Renderhp(x, y, rot, la, r1, r2, n, c)
     RenderSector('hpbar1', x, y, rot, rot + la * c, r1, r2, n)
@@ -448,4 +434,18 @@ function rendercircle(x, y, r, point)
     --            x2, y2, 0.5)
     --end
     RenderSector('.white.rev', x, y, 0, 360, 0, r, point)
+end
+function misc.RenderRing(img, x, y, rot1, rot2, r1, r2, n)
+    --boss card
+    local totalang = rot1-rot2
+    local da = totalang / n
+    local a = rot1
+    for i = 1, n do
+        a = a + da
+        Render4V(img,
+                r1 * cos(a + da) + x, r1 * sin(a + da) + y, 0.5,
+                r2 * cos(a + da) + x, r2 * sin(a + da) + y, 0.5,
+                r2 * cos(a) + x, r2 * sin(a) + y, 0.5,
+                r1 * cos(a) + x, r1 * sin(a) + y, 0.5)
+    end
 end

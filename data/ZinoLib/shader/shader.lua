@@ -3,7 +3,7 @@ POSTEFF_PATH = path
 Print("============LOADING SHADERS=============")
 --LoadFX("gradient_map_fast",path.."gradient_map_fast.glsl")
 Print("==========LOADING SHADERS DONE==========")
-posteff_obj = Class(xobject)
+posteff_obj = zclass(object)
 local posteff_obj_push = Class(object)
 CreateRenderTarget("POSTEFFRT")
 function posteff_obj:init(layerb, layert, shader, attr, blend, rtname)

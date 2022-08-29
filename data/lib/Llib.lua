@@ -36,6 +36,35 @@ function table.clear(dst)
     end
     return dst
 end
+local function PrintTableRecursive(tb,level)
+    if type(tb) ~= "table" then
+        return tb
+    end
+    local ret = ""
+    level = level or 0
+    local i = 0
+    local levelstr = ""
+    if level > 0 then
+        for i=1, level do
+            levelstr = levelstr .. "\t"
+        end
+    end
+    for k,v in pairs(tb) do
+        i = i+1
+        if type(v) ~= "table" then
+            ret = ret .. string.format("%sKey: %s | Value: %s\n",levelstr,k,tostring(v))
+        else
+            local str, _i = PrintTableRecursive(v,level+1)
+            ret = ret .. string.format("%sKey: %s | Value:{\n%s\n%s}\n",levelstr,k,str,levelstr)
+            i = i + _i
+        end
+    end
+    return ret,i
+end
+
+function Print(str)
+    lstg.Log(2,PrintTableRecursive(str))
+end
 
 ---MATH
 local min, max = math.min, math.max

@@ -1,6 +1,9 @@
 zparticle = {}
 local M = zparticle
 local ffi = require "ffi"
+M._mt = {
+    __index = M
+}
 ffi.cdef[[
 typedef struct {
     double x;
@@ -16,36 +19,70 @@ typedef struct {
     int framePtr;
     int delPtr;
     int imgPtr;
-    int rmPtr;
+    int blendPtr;
     double extra1;
     double extra2;
     double extra3;
+    bool active;
 } zparticle;]]
-M.initList = {}
-M.frameList = {}
-M.delList = {}
-M.imgList = {}
-M.rmList = {}
-M.spawner = { }
-function M.spawner:new()
-    self = deepcopy(M.spawner)
-    self.plist = {}
-    return self
+function M:new(img,blend,onInit,onFrame,onDel,poolsize)
+    local ret = {}
+    poolsize = poolsize or 512
+    ret.initList = {onInit or voidfunc}
+    ret.frameList = {onFrame or voidfunc}
+    ret.delList = {onDel or voidfunc}
+    ret.imgList = {img or "white"}
+    ret.blendList = {blend or ""}
+    ret.plist = {}
+    ret.current_pool_id = 1
+    for i=1, poolsize do
+        ret.plist[i] = ffi.new("zparticle",0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,false)
+    end
+    ret.poolsize = #ret.plist
+    setmetatable(ret, M._mt)
+    return ret
 end
-function M.spawner:frame()
-    task.Do(self)
+function M:newParticle(x,y,rot,vx,vy,sx,sy,color,init,frame,del,img,blend,extra1,extra2,extra3)
+    local particle = self.plist[self.current_pool_id]
+    particle.x = x or 0
+    particle.y = y or 0
+    particle.rot = rot or 0
+    particle.vx = vx or 0
+    particle.vy = vy or 0
+    particle.sx = sx or 1
+    particle.sy = sy or 1
+    particle.color = color or 0
+    particle.timer = 0
+    particle.initPtr = init or 1
+    particle.framePtr = frame or 1
+    particle.delPtr = del or 1
+    particle.imgPtr = img or 1
+    particle.blendPtr = blend or 1
+    particle.extra1 = extra1 or 0
+    particle.extra2 = extra2 or 0
+    particle.extra3 = extra3 or 0
+    particle.active = true
+    self.frameList[particle.initPtr](self,particle)
+    self.current_pool_id = (self.current_pool_id) % (self.poolsize-1) + 1
+end
+function M:update()
     for k,v in ipairs(self.plist) do
-        M.frameList[v.framePtr](v,k)
+        if v.active then
+            self.frameList[v.framePtr](self,v)
+            v.x = v.x + v.vx
+            v.y = v.y + v.vy
+            v.timer = v.timer + 1
+        end
     end
 end
-function M.spawner:render()
+function M:render()
     for k,v in ipairs(self.plist) do
-        SetImageState(M.imgList[v.imgPtr], M.rmList[v.rmList], v.color)
-        Render(M.imgList[v.imgPtr],v.x,v.y,v.rot,v.sx,v.sy)
+        if v.active then
+            local img = self.imgList[v.imgPtr]
+            --SetImageState(img, self.blendList[v.blendPtr], v.color)
+            Render(img,v.x,v.y,v.rot,v.sx,v.sy)
+        end
     end
-end
-function M.spawner:del()
-
 end
 
 return M

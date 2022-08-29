@@ -26,6 +26,8 @@ LAYER_ITEM = -300
 LAYER_ENEMY_BULLET = -200
 LAYER_ENEMY_BULLET_EF = -100
 LAYER_TOP = 0
+LAYER_UI = 250
+LAYER_MENU = 500
 
 ----------------------------------------
 ---class

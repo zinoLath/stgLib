@@ -25,6 +25,7 @@ lstg.DoFile("lib/Lstage.lua")--stage关卡系统
 lstg.DoFile("lib/Ltext.lua")--文字渲染
 lstg.DoFile("lib/Lscoredata.lua")--玩家存档
 lstg.DoFile("lib/Lplugin.lua")--用户插件
+lstg.DoFile("lib/Lcolor.lua")--misc global functions
 
 ----------------------------------------
 ---用户定义的一些函数

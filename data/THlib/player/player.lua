@@ -15,7 +15,7 @@ function player_class:init()
     end
     self.x, self.y = 0,-175
     self.img = 'player_placeholder'
-    self.hscale, self.vscale = 4,4
+    self.hscale, self.vscale = screen.scalefrom480,screen.scalefrom480
     --self.omiga = 3
     self.uspeed = 5
     self.fspeed = 2
@@ -35,6 +35,8 @@ function player_class:init()
     player = self
     lstg.player = self
     self.deathbombtimer = 30
+    self.a = 0.5
+    self.b = 0.5
 end
 function player_class:colli(other)
     if not self.is_dying and not self.dialog and not cheat and other.playercolli ~= false then
@@ -148,7 +150,6 @@ function player_class:update_var()
     if self.nextspecial > 0 then
         self.nextspecial = self.nextspecial - 1
     end
-    do return end
     if self.hyper == 1 then
         local func = self.class.hyperOff or voidfunc
         func(self)
@@ -169,7 +170,6 @@ function player_class:do_input()
     if KeyIsPressed('special') and self.nextspecial <= 0 then
         self.class.special(self)
     end
-    do return end
     self.shooting = 0
     if KeyIsDown('shoot') then
         self.shooting = 1
@@ -360,25 +360,26 @@ function player_bullet_straight:frame()
     task.Do(self)
 end
 
-player_death_red = Class(object)
+player_death_red = zclass(object)
 function player_death_red:init()
     self.img = "red_player_mask"
-    self.color = color.Red
-    self.A = 0
+    self._color = Color(255,255,0,0)
+    self._a = 0
     self.layer = LAYER_MENU-200
     self.colli = false
-    self.rm = "mul+mul"
+    self._blend = "mul+screen"
     task.New(self,function()
-        SetFieldInTime(self,player.deathbombtimer*0.3,math.tween.cubicIn,{"A",255})
+        SetFieldInTime(self,player.deathbombtimer*0.3,math.tween.cubicIn,{"_a",255})
         task.Wait(player.deathbombtimer*0.17)
         PlaySound('pldead00',1,self.x/610)
         task.Wait(player.deathbombtimer*0.17)
-        SetFieldInTime(self,player.deathbombtimer*0.3,math.tween.cubicOut,{"A", 0})
+        SetFieldInTime(self,player.deathbombtimer*0.3,math.tween.cubicOut,{"_a", 0})
+        Del(self)
     end)
 end
 player_death_red.frame = task.Do
 function player_death_red:render()
-    SetImageState(self.img,self.rm,self.color)
+    SetImageState(self.img,self._blend,self._color)
     RenderRect(self.img,lstg.world.l,lstg.world.r,lstg.world.b,lstg.world.t)
 end
 local EaseOutCubic = math.tween.cubicOut
@@ -417,7 +418,7 @@ end
 Event:new('onPlayerDeath', function()
     local self = player
     misc.ShakeScreen(10, 30)
-    New(player_showlives_death)
+    --New(player_showlives_death)
 end,1, 'DeathEffect')
 Event:new('onPlayerHit', function()
     New(player_death_red)

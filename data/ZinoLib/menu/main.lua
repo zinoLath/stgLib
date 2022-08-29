@@ -283,7 +283,7 @@ function M.menu:coroutine()
     end
 end
 
-M.manager = Class(xobject)
+M.manager = zclass(object)
 M.manager.name = "DEFAULT_MANAGER"
 --{class, id}
 M.manager.menus = {

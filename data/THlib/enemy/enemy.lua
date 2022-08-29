@@ -5,7 +5,7 @@ lstg.eventDispatcher:addListener('load.THlib.after', function()
     CopyImage('enemy_placeholder', 'parimg1')
 end, 1, 'load enemy placeholder')
 --]]
-enemybase = Class(xobject)
+enemybase = zclass(object)
 function enemybase:init(hp, nontjt, anim_set)
     self.group = nontjt and GROUP_NONTJT or GROUP_ENEMY
     self.layer = LAYER_ENEMY
@@ -69,9 +69,7 @@ function enemybase:onDeath()
     Kill(self)
 end
 
-
---PLEASE i need to make the animation system first :sopping: hate it here
-enemy = Class(enemybase)
+enemy = zclass(enemybase)
 function enemy:init(anim_set,hp,clear_bul,auto_delete,nontjt)
     enemybase.init(self,hp,nontjt,anim_set)
     self.img = "parimg1"
