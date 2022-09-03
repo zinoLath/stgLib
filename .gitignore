@@ -1,3 +1,16 @@
 .idea/
 *.log
 *.rar
+
+/config.json
+
+#zane's wierd editor stuff
+/.vscode/
+*.zip
+*.7z
+*.swp
+*.swo
+/tags
+*.new
+*.old
+*.tmp
