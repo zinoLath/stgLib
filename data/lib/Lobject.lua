@@ -27,7 +27,8 @@ LAYER_ENEMY_BULLET = -200
 LAYER_ENEMY_BULLET_EF = -100
 LAYER_TOP = 0
 LAYER_UI = 250
-LAYER_MENU = 500
+LAYER_POST_PROCESS = 500
+LAYER_MENU = 1000
 
 ----------------------------------------
 ---class
@@ -113,20 +114,28 @@ function Class(base, define)
     table.insert(all_class, result)
     return result
 end
-
+local function dirret(...)
+    return ...
+end
 function zclass(base, ...)
     local arg = {...}
+    local copyf = dirret
+    if arg[#arg] == true then
+        copyf = deepcopy
+        table.remove(arg)
+    end
     local result = baseclass(base)
+    result.base = base
     result[".render"] = true
     for k, v in pairs(base) do
         if type(k) ~= "number" then
-            result[k] = v
+            result[k] = copyf(v)
         end
     end
     for k,define in ipairs(arg) do
         if type(define) == "table" then
             for k, v in pairs(define) do
-                result[k] = v
+                result[k] = copyf(v)
             end
         end
     end
@@ -177,7 +186,7 @@ local OldDel = Del
 function Kill(o)
     if o then
         if o._servants then
-            _kill_servants(o)
+            KillServants(o)
         end
         OldKill(o)
     end
@@ -186,7 +195,7 @@ end
 function Del(o)
     if o then
         if o._servants then
-            _del_servants(o)
+            DelServants(o)
         end
         OldDel(o)
     end

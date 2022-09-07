@@ -7,12 +7,26 @@
 
 KeyState = {}
 KeyStatePre = {}
+SysKeyState = {}
+SysKeyStatePre = {}
 
 ---刷新输入
 function GetInput()
     for k, v in pairs(setting.keys) do
         KeyStatePre[k] = KeyState[k]
         KeyState[k] = GetKeyState(v)
+    end
+end
+function GetSysInput()
+    if stage.next_stage then
+        SysKeyStatePre = {}
+        MouseStatePre = {}
+    end
+    for k, _ in pairs(setting.keysys) do
+        SysKeyStatePre[k] = SysKeyState[k]
+    end
+    for k, v in pairs(setting.keysys) do
+        SysKeyState[k] = GetKeyState(v)
     end
 end
 
@@ -25,6 +39,16 @@ end
 function KeyIsPressed(key)
     --于javastage中重载
     return KeyState[key] and (not KeyStatePre[key])
+end
+---是否按下
+function SysKeyIsDown(key)
+    return SysKeyState[key]
+end
+
+---是否在当前帧按下
+function SysKeyIsPressed(key)
+    --于javastage中重载
+    return SysKeyState[key] and (not SysKeyStatePre[key])
 end
 
 ---兼容

@@ -208,7 +208,7 @@ function M.font_functions:render(str,x,y,scale,halign,valign,color,offsetfunc)
         end
     end
 end
-function M.font_functions:renderOutline(str,x,y,scale,halign,valign,color,offsetfunc,outline_size,outline_color,blend)
+function M.font_functions:renderOutline(str,x,y,scale,halign,valign,color,offsetfunc,outline_size,outline_color,blend,alpha)
     blend = blend or "mul+alpha"
     PushRenderTarget("BMF_FONT_BUFFER")
     RenderClear(Color(0x00000000))
@@ -216,10 +216,11 @@ function M.font_functions:renderOutline(str,x,y,scale,halign,valign,color,offset
     PopRenderTarget("BMF_FONT_BUFFER")
     local _color = outline_color
     local _size = outline_size
+    alpha = alpha or 1
     lstg.PostEffect("BMF_BORDER_SHADER", "BMF_FONT_BUFFER", 6, "mul+alpha",
             {
                 { _color.r*bytetofloat, _color.g*bytetofloat, _color.b*bytetofloat, _color.a*bytetofloat },
-                { _size, 0, 0, 0}
+                { _size, alpha, 0, 0}
             })
 end
 M.tag_funcs = {}
@@ -234,8 +235,7 @@ M.tag_funcs.state = {
             state.color_bot = StringToColor(tag._attr.bcolor)
         end
         if tag._attr.alpha then
-            state.color_bot.a = tonumber(tag._attr.alpha)
-            state.color_top.a = tonumber(tag._attr.alpha)
+            state.alpha = tonumber(tag._attr.alpha)
         end
     end
 }
@@ -274,6 +274,7 @@ local function returnTList(txt,info,state,ret,state_list,cursor)
     state = state or {}
     state_list = state_list or {}
     state.scale = state.scale or 1
+    state.alpha = state.alpha or 1
     local cr_state = fontcopy(state)
     state_list[#state_list+1] = cr_state
     local state_id = #state_list
@@ -371,7 +372,7 @@ function M:pool(text,init_state,width)
         si = v.state
         local borderHash = stateList[si].border_color.r * 255 * 255 + stateList[si].border_color.g * 255 + stateList[si].border_color.b
         if not borderList[i] then
-            borderList[i] = {borderHash = borderHash, color = stateList[si].border_color, glyphList = {}, size = stateList[si].border_size}
+            borderList[i] = {borderHash = borderHash, color = stateList[si].border_color, glyphList = {}, size = stateList[si].border_size, alpha = stateList[si].alpha or 1}
         end
         table.insert(borderList[i].glyphList,v)
     end
@@ -404,6 +405,7 @@ local border_command = {
 }
 function M:renderPool(pool,x,y,scale,count,timer,imgscale)
     table.clear(render_command)
+    scale = scale or 1
     count = count or 9999999999
     timer = timer or 0
     imgscale = imgscale or 1
@@ -436,11 +438,13 @@ function M:renderPool(pool,x,y,scale,count,timer,imgscale)
         PopRenderTarget("BMF_FONT_BUFFER")
         local color = _v.color
         local size = _v.size
+        local alpha = _v.alpha or 1
         border_command[1][1] = color.r * bytetofloat
         border_command[1][2] = color.g * bytetofloat
         border_command[1][3] = color.b * bytetofloat
         border_command[1][4] = color.a * bytetofloat
         border_command[2][1] = size
+        border_command[2][2] = alpha
         lstg.PostEffect("BMF_BORDER_SHADER", "BMF_FONT_BUFFER", 6, "mul+alpha", border_command)
     end
 end

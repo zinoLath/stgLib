@@ -33,12 +33,12 @@ function M:new(img,blend,onInit,onFrame,onDel,poolsize)
     ret.delList = {onDel or voidfunc}
     ret.imgList = {img or "white"}
     ret.blendList = {blend or ""}
-    ret.plist = {}
+    ret.plist = ffi.new("zparticle[?]", poolsize)
     ret.current_pool_id = 1
     for i=1, poolsize do
         ret.plist[i] = ffi.new("zparticle",0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,false)
     end
-    ret.poolsize = #ret.plist
+    ret.poolsize = poolsize
     setmetatable(ret, M._mt)
     return ret
 end
@@ -66,21 +66,21 @@ function M:newParticle(x,y,rot,vx,vy,sx,sy,color,init,frame,del,img,blend,extra1
     self.current_pool_id = (self.current_pool_id) % (self.poolsize-1) + 1
 end
 function M:update()
-    for k,v in ipairs(self.plist) do
-        if v.active then
-            self.frameList[v.framePtr](self,v)
-            v.x = v.x + v.vx
-            v.y = v.y + v.vy
-            v.timer = v.timer + 1
+    for i = 0, self.poolsize - 1 do
+        if self.plist[i].active then
+            self.frameList[self.plist[i].framePtr](self,self.plist[i])
+            self.plist[i].x = self.plist[i].x + self.plist[i].vx
+            self.plist[i].y = self.plist[i].y + self.plist[i].vy
+            self.plist[i].timer = self.plist[i].timer + 1
         end
     end
 end
 function M:render()
-    for k,v in ipairs(self.plist) do
-        if v.active then
-            local img = self.imgList[v.imgPtr]
-            --SetImageState(img, self.blendList[v.blendPtr], v.color)
-            Render(img,v.x,v.y,v.rot,v.sx,v.sy)
+    for i = 0, self.poolsize - 1 do
+        if self.plist[i].active then
+            -- local img = self.imgList[self.plist[i].imgPtr]
+            -- SetImageState(img, self.blendList[v.blendPtr], v.color)
+            lstg.Render("white", self.plist[i].x, self.plist[i].y, self.plist[i].rot, self.plist[i].sx, self.plist[i].sy)
         end
     end
 end

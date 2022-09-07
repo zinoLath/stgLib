@@ -1,5 +1,6 @@
 local M = {}
 MenuSys = M
+local mouse = lstg.Input.Mouse
 ---ok so there's three types of objects in this thing:
 ---
 ---the menu manager: the singular object that serves a sort of base for everything else, and is the 'abstraction' of
@@ -37,6 +38,7 @@ function M.option:init(manager,menu,tid,id,data)
     self.rect = true
     self.a, self.b = 128,128
     self.font = self.class.font or manager.class.font
+    self.pool = self.class.pool
     self.class.ctor(self,data,manager)
 end
 function M.option:frame()
@@ -46,9 +48,14 @@ function M.option:ctor(data,manager)
 
 end
 function M.option:render()
+    SetViewMode("ui")
     if self.img then
         DefaultRenderFunc(self)
         return
+    end
+    local pool = self.pool or self.class.pool
+    if pool then
+        BMF:renderPool(pol,self.x,self.y,self.scale,9999999,self.timer)
     end
     local font = self.font or self.class.font
     if not font then
@@ -61,23 +68,17 @@ function M.option:render()
 end
 local voidfunc = function()  end
 function M.option:colli(other)
-    if MouseIsPressed(1) then
+    if mouse.GetKeyState(mouse.Primary) then
         local func = self.class.click or voidfunc
-        func(self,other)
+        task.New(self,function() func(self,other)  end)
     end
-    if MouseIsDown(1) then
+    if mouse.GetKeyState(mouse.Primary) then
         local func = self.class.hold or voidfunc
-        func(self,other)
+        task.New(self,function() func(self,other)  end)
     end
-    if MouseIsReleased(1) then
-        local func = (self.onEnter or self.class.onEnter) or voidfunc
-        func(self)
-    end
-    if not MouseIsPressed(1) and not MouseIsDown(1) then
-        local menu = self.menu
-        local func = menu.class.hover or voidfunc
-        func(menu,self)
-    end
+    local menu = self.menu
+    local func = menu.class.hover or voidfunc
+    task.New(self,function() func(self,other)  end)
 end
 function M.option:_in()
     self.active = true
@@ -91,7 +92,7 @@ function M.option:_out()
     end
 end
 function M.option:_select()
-    SetFieldInTime(self, 10, math.tween.cubicInOut, {'x', self._x + 60})
+    SetFieldInTime(self, 10, math.tween.cubicInOut, {'x', self._x + 100})
 end
 function M.option:_unselect()
     SetFieldInTime(self, 10, math.tween.cubicInOut, {'x', self._x})
@@ -116,6 +117,7 @@ M.menu.options = {
     {M.option, 'bald Option2'}
 }
 function M.menu:init(manager)
+    self.bound = false
     self.selected = 1
     self.manager = manager
     self.options = {}
@@ -235,7 +237,7 @@ end
 function M.menu:hover(option)
     local newid = option.id
     if newid ~= self.selected then
-        self.class.changeSelect(self,newid)
+        CallClass(self,"changeSelect",newid)
     end
 end
 function M.menu:select()
@@ -273,7 +275,7 @@ function M.menu:coroutine()
                     self.class.key_events[k](self)
                 end
             else
-                if KeyIsPressed(k) then
+                if SysKeyIsPressed(k) then
                     Print(k)
                     self.class.key_events[k](self)
                 end
@@ -294,10 +296,10 @@ function M.manager:init()
     self.menus = {}
     self.bound = false
     self.group = GROUP_MENU
-    self.layer = -1000
+    self.layer = LAYER_MENU-100
     self.stack = stack()
     for k,v in ipairs(self.class.menus) do
-        --Print(PrintTable(v))
+        Print(PrintTable(v))
         self.menus[v[2]] = New(v[1],self)
     end
     task.New(self,function()
@@ -305,6 +307,7 @@ function M.manager:init()
     end)
 end
 function M.manager:render()
+    SetViewMode("ui")
     RenderText('menu',self.class.name,screen.width/2,screen.height/2,1,'center')
 end
 function M.manager:frame()
@@ -345,20 +348,29 @@ function M.manager:enter_menu(menu)
     self.stack:push(menu)
     menu.class._in(menu)
 end
+function M.manager:go_back()
+    if #self.stack > 1 then
+        local menu = self.stack[0]
+        menu.class._out(menu)
+        self.stack:pop()
+    else
+        CallClass(self,"exit")
+    end
+end
 
 function MenuInputChecker(name)
     while(true) do
-        while(not KeyIsPressed(name))do
+        while(not SysKeyIsPressed(name))do
             coroutine.yield(false) --return false until the key is pressed
         end
         coroutine.yield(true) --return true once
         for i=0, 30 do
             coroutine.yield(false) --return false for 30 frames
-            if (not KeyIsDown(name)) then
+            if (not SysKeyIsDown(name)) then
                 break --if the key is not being held down, break out of for (which will make you consequently restart
             end
         end
-        while (KeyIsDown(name)) do
+        while (SysKeyIsDown(name)) do
             coroutine.yield(true) -- return true once every 3 frames
             for i=0, 3 do
                 coroutine.yield(false) --return false for 3 frames
@@ -367,15 +379,41 @@ function MenuInputChecker(name)
     end
 end
 
+local function getMousePositionToUI()
+    local mx, my = lstg.GetMousePosition() -- 左下角为原点，y 轴向上
+    -- 转换到 UI 视口
+    mx = mx - screen.dx
+    my = my - screen.dy
+
+    -- 方法一：正常思路
+
+    -- 归一化
+    --mx = mx / (screen.width * screen.scale)
+    --my = my / (screen.height * screen.scale)
+    -- 转换到 UI 坐标
+    --mx = mx * screen.width
+    --my = my * screen.height
+
+    -- 方法二：由于 UI 坐标系左下角就是原点，直接用 screen.scale
+
+    mx = mx / screen.scale
+    my = my / screen.scale
+
+    return mx, my
+end
 mouse_pointer = Class(object)
-function mouse_pointer:init()
+function mouse_pointer:init(manager)
     self.bound = false
-    self.group = GROUP_POINTER
+    self.group = GROUP_CURSOR
     self.layer = 1000
     self.rect = true
     self.a, self.b = 16,16
+    self.manager = manager
 end
 function mouse_pointer:frame()
-    self.x, self.y = GetMousePosition()
+    self.x, self.y = getMousePositionToUI()
+    if not IsValid(self.manager) then
+        Kill(self)
+    end
 end
 return M

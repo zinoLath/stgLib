@@ -28,6 +28,7 @@ local lerp = math.lerp
 ---incremental = {start, increment}
 ---linear = {from, to, precisely, tween}
 ---sinewave = {from, to, initial_angle, periodn, precisely}
+---zigzag = {from, to, times, precisely, tween}
 function AdvancedFor(times,...)
     local args = {...}
     local func = args[#args]
@@ -45,12 +46,24 @@ function AdvancedFor(times,...)
             if v[1] == 'incremental' then
                 variables[k] = variables[k] + v[3]
             elseif v[1] == 'linear' then
-                variables[k] = lerp(v[2], v[3], v[4] and i/(times-2) or i/(times-1))
+                variables[k] = lerp(v[2], v[3], v[4] and i/(times-1) or i/(times))
+            elseif v[1] == 'zigzag' then
+                local t = v[5] and i/(times-1) or i/(times)
+                local maxt = t * (v[4]+1)
+                local finalt
+                if math.floor(maxt) % 2 == 1 then
+                    local _, val = math.modf(maxt)
+                    finalt = 1-val
+                else
+                    local _, val = math.modf(maxt)
+                    finalt = val
+                end
+                variables[k] = lerp(v[2], v[3], finalt)
             elseif v[1] == 'sinewave' then
                 variables[k] = lerp(v[2], v[3], 0.5 + 0.5 * sin(v[4] + v[6] and (360*v[5])/(times-2) or (360*v[5])/(times-1)))
             end
         end
-        func(unpack(variables),i)
+        func(unpack(variables))
     end
 end
 
@@ -109,7 +122,7 @@ function InterpolateColor(a,b,t)
             Interpolate(a.b,b.b,t)
     )
 end
-local printCallClass = false
+local printCallClass = true
 function CallClass(self, key, ...)
     if self[key] ~= nil then
         return self[key](self,...)
@@ -299,4 +312,9 @@ function StringToColor(str)
     if str:sub(1,1) == "#" then
         return Color(255,tonumber(str:sub(2,3),16),tonumber(str:sub(4,5),16),tonumber(str:sub(6,7),16))
     end
+end
+function Rotate2D(x,y,ang)
+    local _cos = cos(ang)
+    local _sin = sin(ang)
+    return x * _cos - y * _sin, x * _sin + y * _cos
 end

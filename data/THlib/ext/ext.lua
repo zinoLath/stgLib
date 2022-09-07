@@ -6,16 +6,18 @@
 ----------------------------------------
 ---ext加强库
 
+local Event = Event
 ---@class ext @额外游戏循环加强库
 ext = {}
 
-local extpath = "THlib/ext/"
+local extpath = GetCurrentScriptDirectory()
 
-DoFile(extpath .. "ext_pause_menu.lua")
+--DoFile(extpath .. "ext_pause_menu.lua")
  --暂停菜单和暂停菜单资源
-DoFile(extpath .. "ext_replay.lua")
+Include(extpath .. "ext_replay.lua")
  --CHU爷爷的replay系统以及切关函数重载
-DoFile(extpath .. "ext_stage_group.lua")
+Include(extpath .. "ext_stage_group.lua")
+Include(extpath .. "pause/pause.lua")
  --关卡组
 
 ext.replayTicker = 0
@@ -24,31 +26,15 @@ ext.slowTicker = 0
  --控制时缓的变量
 ext.time_slow_level = {1, 2, 3, 4}
  --60/30/20/15 4个程度
-ext.pause_menu = ext.pausemenu()
  --实例化的暂停菜单对象，允许运行时动态更改样式
+lstg.gtasks = {}
+lstg.stasks = {}
+lstg.rtasks = {}
 
 ---重置缓速计数器
 function ext.ResetTicker()
     ext.replayTicker = 0
     ext.slowTicker = 0
-end
-
----获取暂停菜单发送的命令
----@return string
-function ext.GetPauseMenuOrder()
-    return ext.pause_menu_order
-end
-
----发送暂停菜单的命令，命令有以下类型：
----'Continue'
----'Return to Title'
----'Quit and Save Replay'
----'Give up and Retry'
----'Restart'
----'Replay Again'
----@param msg string
-function ext.PushPauseMenuOrder(msg)
-    ext.pause_menu_order = msg
 end
 
 ----------------------------------------
@@ -111,13 +97,15 @@ function ChangeGameStage()
     stage.next_stage = nil
     stage.current_stage.timer = 0
     stage.current_stage:init()
+    lstg.last_pause = false
+    lstg.is_paused = false
 end
 
 ---获取输入
 function GetInput()
     if stage.next_stage then
         KeyStatePre = {}
-    elseif ext.pause_menu:IsKilled() then
+    elseif not lstg.is_paused then
         -- 刷新KeyStatePre
         for k, _ in pairs(setting.keys) do
             KeyStatePre[k] = KeyState[k]
@@ -131,7 +119,7 @@ function GetInput()
         end
     end
 
-    if ext.pause_menu:IsKilled() then
+    if not lstg.is_paused then
         if ext.replay.IsRecording() then
             -- 录像模式下记录当前帧的按键
             replayWriter:Record(KeyState)
@@ -201,12 +189,10 @@ function DoFrameEx()
         if GetKeyState(setting.keysys.repfast) then
             for _ = 1, 4 do
                 DoFrame(true, false)
-                ext.pause_menu_order = nil
             end
         elseif GetKeyState(setting.keysys.repslow) then
             if ext.replayTicker % 4 == 0 then
                 DoFrame(true, false)
-                ext.pause_menu_order = nil
             end
         else
             if lstg.var.timeslow then
@@ -217,7 +203,6 @@ function DoFrameEx()
             else
                 DoFrame(true, false)
             end
-            ext.pause_menu_order = nil
         end
     else
         --正常游戏时
@@ -239,7 +224,6 @@ end
 function AfterRender()
     --暂停菜单渲染
     local state = 0
-    ext.pause_menu:render()
 end
 
 function GameExit()
@@ -252,19 +236,24 @@ local Ldebug = require("lib.Ldebug")
 
 function FrameFunc()
     Ldebug.update()
+    task.Do(lstg.gtasks)
+    GetSysInput()
     --重设boss ui的槽位（多boss支持）
     --boss_ui.active_count = 0
     --执行场景逻辑
-    if ext.pause_menu:IsKilled() then
+    Event:call("onPreFrame")
+    CollisionCheck(GROUP_MENU, GROUP_CURSOR)
+    if not lstg.is_paused then
+        task.Do(lstg.stasks)
         --处理录像速度与正常更新逻辑
+        Event:call("onStgFrame")
         DoFrameEx()
-        --按键弹出菜单
-        if (GetLastKey() == setting.keysys.menu or ext.pop_pause_menu) and (not stage.current_stage.is_menu) then
-            ext.pause_menu:FlyIn()
+    else
+        Event:call("onPausedFrame")
+        for k, obj in ObjList(GROUP_MENU) do
+            UpdateObject(obj)
         end
     end
-    --暂停菜单更新
-    ext.pause_menu:frame()
     Ldebug.layout()
     --退出游戏逻辑
     if lstg.quit_flag then
@@ -278,8 +267,7 @@ function RenderFunc()
     UpdateScreenResources()
     SetWorldFlag(1)
     BeforeRender()
-    if
-        stage.current_stage.timer and stage.current_stage.timer >= 0 and
+    if stage.current_stage.timer and stage.current_stage.timer >= 0 and
             (stage.next_stage == nil or stage.next_stage.is_menu)
      then
         stage.current_stage:render()
@@ -291,6 +279,7 @@ function RenderFunc()
             Collision_Checker.render()
         end
     end
+    task.Do(lstg.rtasks)
     AfterRender()
     Ldebug.draw()
     EndScene()

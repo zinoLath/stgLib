@@ -120,6 +120,36 @@ if true then
     function ran:GetSeed()
         return ranx:GetSeed()
     end
+    pran = {}
+    local pranx = lstg.Rand()
+    ---@param a number
+    ---@param b number
+    ---@return number
+    function pran:Int(a, b)
+        if a > b then
+            return pranx:Int(b, a)
+        else
+            return pranx:Int(a, b)
+        end
+    end
+    ---@param a number
+    ---@param b number
+    ---@return number
+    function pran:Float(a, b)
+        return pranx:Float(a, b)
+    end
+    ---@return number
+    function pran:Sign()
+        return pranx:Sign()
+    end
+    ---@param v number
+    function pran:Seed(v)
+        pranx:Seed(v)
+    end
+    ---@return number
+    function pran:GetSeed()
+        return pranx:GetSeed()
+    end
 else
     -- 2019 年的新一代 xoshiro256** 随机数发生器
     local random = require("random")

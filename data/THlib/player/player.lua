@@ -4,7 +4,6 @@ local Event = Event
 local lerp = math.lerp
 local path = GetCurrentScriptDirectory()
 LoadImageFromFile("hitbox_player", path.."hitbox.png")
-SetImageScale("hitbox_player",2)
 LoadImageFromFile("protect_circle", path.."protect_circle.png")
 LoadImageFromFile("red_player_mask", path.."red_player_mask.png")
 player_class = zclass(object)
@@ -310,7 +309,7 @@ function zino_grazer:frame()
     else
         self.p = SnapLerp(self.p,0,0.1)
     end
-    local scale = lerp(2,0.75,self.f)
+    local scale = lerp(2,1,self.f)
     self.hscale, self.vscale = scale,scale
     self.A = lerp(0,255,self.f)
     if self.obj.dx ~= 0 or self.obj.dy ~= 0 then

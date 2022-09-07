@@ -79,7 +79,7 @@ function stage.group.frame(self)
     if self.timer == 0 then
         New(ui,self)
     end
-    --
+    --[[
     if lstg.var.lifeleft <= -1 then
         if ext.replay.IsReplay() then
             ext.pop_pause_menu = true
@@ -163,6 +163,7 @@ function stage.group.frame(self)
         lstg.tmpvar.pause_menu_text = nil
         lstg.var.timeslow = nil
     end
+    --]]
 end
 
 stage.group.sc_pr_fast_retry = false

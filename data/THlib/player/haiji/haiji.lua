@@ -18,7 +18,7 @@ haiji_player.init = MCDelegate.new()
 haiji_player.init:addEvent(player_class.init, "player.init")
 haiji_player.init:addEvent(function(self)
     haiji_manager:attachObj(self)
-    self.uspeed = 5
-    self.fspeed = 2.5
+    self.uspeed = 4
+    self.fspeed = 2
 end, "haiji.init")
 --haiji_player.init:addEvent(function() error("a")  end, "player.debug")

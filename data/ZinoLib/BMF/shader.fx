@@ -17,6 +17,7 @@ cbuffer user_data : register(b0)
     float4   userdata;
 };
 #define radius userdata.x
+#define alpha userdata.y
 
 // 用户传递的纹理和采样器参数，可用槽位 0 到 3
 
@@ -58,7 +59,8 @@ PS_Output main(PS_Input input)
     tex_col.rgb *= tex_col.a;
 
     PS_Output output;
-    output.col = tex_col;
+    output.col = min(tex_col, float4(1.0f,1.0f,1.0f,1.0f));
+    output.col *= alpha;
     return output;
 }
 

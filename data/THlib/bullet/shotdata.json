@@ -22,6 +22,11 @@
       "hitsize": 10,
       "size": 24
     },
+    "bigcircle_border": {
+      "rect": "M.sdsquare(3)",
+      "hitsize": 10,
+      "size": 64
+    },
     "circle": {
       "rect": "M.sdsquare(4)",
       "hitsize": 10,
@@ -39,7 +44,7 @@
     },
     "ellipse": {
       "rect": "M.sdsquare(6)",
-      "hitsize": 7,
+      "hitsize": 10,
       "size": 36
     },
     "heart": {
@@ -60,7 +65,7 @@
     "scale": {
       "rect": "M.sdsquare(10)",
       "hitsize": 10,
-      "size": 32,
+      "size": 24,
       "center": "23,32"
     },
     "square": {

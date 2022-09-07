@@ -6,6 +6,7 @@
 ---脚本载入
 
 lstg.included = {}
+lstg.include_value = {}
 lstg.current_script_path = { '' }
 
 function Include(filename)
@@ -23,7 +24,11 @@ function Include(filename)
         end
         lstg.included[filename] = true
         ret = lstg.DoFile(filename)
+        lstg.include_value[filename] = ret
         lstg.current_script_path[#lstg.current_script_path] = nil
+    end
+    if lstg.include_value[filename] then
+        ret = lstg.include_value[filename]
     end
     return ret
 end

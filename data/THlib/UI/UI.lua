@@ -1,6 +1,7 @@
 ui = Class(object)
 local path = GetCurrentScriptDirectory()
 LoadImageFromFile("HUD_image",path ..  "HUD.png",false,0,0)
+LoadFont("menu",font_path.."menu.fnt")
 function ui:init(stage)
     self.bound = false
     self.colli = false

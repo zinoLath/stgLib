@@ -99,7 +99,15 @@ function BulletBreak:frame()
         Del(self)
     end
 end
-
+local default_sub = color.White
+local default_delay = 13
+local default_blend = "grad+alpha"
+function CreateShotA(x,y,speed,angle,graphic,color,subcolor,blend,delay)
+    subcolor = subcolor or default_sub
+    delay = delay or default_delay
+    blend = blend or default_blend
+    return New(straight,graphic,color,subcolor,x,y,angle,speed,0,blend,delay)
+end
 straight = zclass(bullet)
 function straight:init(type, color, subcolor, x, y, rot, speed, omiga, blend, delaytime, indes)
     bullet.init(self,type, color, subcolor, blend)

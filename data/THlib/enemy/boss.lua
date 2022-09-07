@@ -137,6 +137,7 @@ function M:cardStartEffect(card)
     local isnon = card.name == ""
     if not isnon then
         self.snameobj = New(cutin_obj,card,self)
+        self.cutin_effect = New(cutin_border,card,self)
     end
 end
 function M:cardKillEffect(card)
