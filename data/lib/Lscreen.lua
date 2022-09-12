@@ -269,8 +269,8 @@ end
 function SetViewMode(mode)
     lstg.viewmode = mode
     if mode == '3d' then
-        SetViewport(lstg.world.scrl * screen.scale + screen.dx, lstg.world.scrr * screen.scale + screen.dx,
-                lstg.world.scrb * screen.scale + screen.dy, lstg.world.scrt * screen.scale + screen.dy)
+        SetViewport(0 * screen.scale + screen.dx, screen.width * screen.scale + screen.dx,
+                0 * screen.scale + screen.dy, screen.height * screen.scale + screen.dy)
         SetPerspective(
                 lstg.view3d.eye[1], lstg.view3d.eye[2], lstg.view3d.eye[3],
                 lstg.view3d.at[1], lstg.view3d.at[2], lstg.view3d.at[3],
@@ -282,7 +282,7 @@ function SetViewMode(mode)
         SetImageScale(((((lstg.view3d.eye[1] - lstg.view3d.at[1]) ^ 2
                 + (lstg.view3d.eye[2] - lstg.view3d.at[2]) ^ 2
                 + (lstg.view3d.eye[3] - lstg.view3d.at[3]) ^ 2) ^ 0.5)
-                * 2 * math.tan(lstg.view3d.fovy * 0.5)) / (lstg.world.scrr - lstg.world.scrl))
+                * 2 * math.tan(lstg.view3d.fovy * 0.5)) / screen.width)
     elseif mode == 'world' then
         --计算world宽高和偏移
         local offset = lstg.worldoffset
@@ -306,6 +306,9 @@ function SetViewMode(mode)
     elseif mode == 'ui' then
         SetRenderRect(0, screen.width, 0, screen.height, 0, screen.width, 0, screen.height)
         SetImageScale(1)
+    elseif mode == '2dbg' then
+        SetRenderRect(0, screen.width, 0, screen.height, 0, screen.width, 0, screen.height)
+        SetImageScale(1/screen.scalefrom480)
     else
         error('Invalid arguement.')
     end
@@ -324,7 +327,7 @@ function RenderClearViewMode(color)
     elseif lstg.viewmode == 'world' then
         local w = lstg.world
         draw(w.l, w.r, w.b, w.t)
-    elseif lstg.viewmode == 'ui' then
+    elseif lstg.viewmode == 'ui' or lstg.viewmode == "2dbg" then
         draw(0, screen.width, 0, screen.height)
     else
         error('Unknown viewmode.')

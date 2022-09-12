@@ -229,6 +229,18 @@ function player_class:render()
     end
 end
 
+function player_class:spawnOptions(optlist,optclass,func)
+    optlist = optlist or self.class.optlist
+    self.optpos = optlist
+    self.maxpower = #optlist[1]
+    self.options = {}
+    for i=1, self.maxpower do
+        local opt = New(optclass or self.class.option,self,i)
+        table.insert(self.options,opt)
+        func(self,opt)
+    end
+end
+
 player_class.option = zclass(object)
 function player_class.option:init(player,id)
     self.player = player
@@ -236,11 +248,11 @@ function player_class.option:init(player,id)
     self.layer = LAYER_PLAYER+1
     self.group = GROUP_GHOST
     self.bound = false
-    self.img = player.class.optionimg or 'option_placeholder'
+    self.img = player.optionimg or player.class.optionimg or 'option_placeholder'
     self.prev_on = false
     self.on = true
-    self.omiga = 3
     self._x, self._y = player.x, player.y
+    self.off = player.optpos[clamp(0+1,1,2)][self.id]
 end
 function player_class.option:frame()
     task.Do(self)
@@ -259,9 +271,14 @@ function player_class.option:process_movement()
     local t = 0.4
     self._x = lerp(self._x, player.x, t)
     self._y = lerp(self._y, player.y, t)
-    self.offset = player.optionpos[player.slowf][self.id]
-    self.x = self._x + self.offset.x
-    self.y = self._y + self.offset.y
+    self.offset = player.optpos[clamp(player.slow+1,1,2)][self.id]
+    if self.lerp_pos then
+        self.off = Vector.lerp(self.off,self.offset,0.3)
+    else
+        self.off = Vector.lerp(self.off,self.offset,1)
+    end
+    self.x = self._x + self.off.x
+    self.y = self._y + self.off.y
 end
 function player_class.option:enter()
     SetFieldInTime(self,20,math.tween.cubicInOut,{'hscale',1}, {'vscale',1})

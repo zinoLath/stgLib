@@ -50,8 +50,7 @@ function ChangeGameTitle()
         table.concat(
         {
             string.format("FPS=%.1f", GetFPS()),
-            "OBJ=" .. GetnObj(),
-            gconfig.window_title
+            "OBJ=" .. GetnObj()
         },
         " | "
     )

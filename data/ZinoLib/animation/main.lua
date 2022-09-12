@@ -1,13 +1,9 @@
-local M = {} --the global namespace
+local M = class() --the global namespace
 ZAnim = M
 local path = GetCurrentScriptDirectory()
 local min = math.min
 local max = math.max
-M.mt = {
-    __index = M
-}
-function M.new(side)
-    local self = setmetatable({}, M.mt)
+function M:new(side)
     self.anims = {}
     self.cos = {}
     self.data = {}
@@ -22,7 +18,7 @@ function M.new(side)
     return self
 end
 function M:attachObj(obj)
-    local copy = self:copy()
+    local copy = self
     copy.obj = obj
     obj.animManager = copy
     return copy
@@ -85,11 +81,13 @@ local function deepcopy(tb,id)
             ret[k] = deepcopy(v,id)
         end
     end
-    setmetatable(ret, getmetatable(tb))
-    return ret
+    return setmetatable(ret,getmetatable(tb))
 end
 function M:addAnimation(anim,name)
-    self.anims[name] = deepcopy(anim)
+    return self:addAnimationNC(deepcopy(anim),name)
+end
+function M:addAnimationNC(anim,name)
+    self.anims[name] = anim
     self.data[name] = {}
     self.anims[name]:init(self,name)
     self:createAnimCO(name)
@@ -106,9 +104,12 @@ function M:playAnim(name,...)
     self.anims[name]:start(self,...)
 end
 function M:copy()
-    local ret = setmetatable(softcopy(self),M.mt)
+    local ret = M()
     ret.cos = deepcopy(self.cos)
     ret.data = deepcopy(self.data)
+    for k,v in pairs(self.anims) do
+        ret:addAnimationNC(v,k)
+    end
     return ret
 end
 frame_anim = Include(path.."frame.lua")

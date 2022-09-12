@@ -119,6 +119,7 @@ local function dirret(...)
 end
 function zclass(base, ...)
     local arg = {...}
+    base = base or object
     local copyf = dirret
     if arg[#arg] == true then
         copyf = deepcopy
@@ -142,7 +143,6 @@ function zclass(base, ...)
     table.insert(all_class, result)
     return result
 end
-
 ---对所有class的回调函数进行整理，给底层调用
 function InitAllClass()
     for _, v in pairs(all_class) do
@@ -210,3 +210,5 @@ function SetV2(obj, v, angle, rot, aim)
         SetV(obj, v, angle, rot)
     end
 end
+
+Class = zclass

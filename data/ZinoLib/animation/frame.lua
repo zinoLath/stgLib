@@ -1,7 +1,4 @@
-local M = {}
-M.mt = {
-    __index = M
-}
+local M = class()
 local function loopTB(tb,id)
     while true do
         if id > #tb then
@@ -29,8 +26,7 @@ local sTypes = {
 ---     1,2,3,4,5,6,4,5,6,3,1,2
 --- the numbers basically mean the index of the image inside imgs
 --- mmmmaybe allow for real-numbered loops (like, 1.2 loops)
-function M.new(imgs,indices,interval)
-    local self = setmetatable({},M.mt)
+function M:new(imgs,indices,interval)
     self.imgs = imgs --the image list
     self.ids = indices --the indices
     self.interval = interval --frames between each anim
@@ -49,7 +45,7 @@ function M.newFromGroup(name,indices,interval)
             break
         end
     end
-    return M.new(ret,indices,interval)
+    return M(ret,indices,interval)
 end
 --when the animation is given to an object
 function M:init(manager,name)

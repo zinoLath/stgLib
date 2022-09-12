@@ -9,8 +9,9 @@ lstg = lstg or {}
 ----------------------------------------
 ---各个模块
 
-lstg.DoFile("gconfig.lua")--全局配置信息
+lstg.DoFile("loader.lua")--全局配置信息
 lstg.DoFile("lib/Llib.lua")--misc global functions
+lstg.DoFile("lib/Lclass.lua")--misc global functions
 lstg.DoFile("lib/Llog.lua")--简单的log系统
 lstg.DoFile("lib/Lglobal.lua")--用户全局变量
 lstg.DoFile("lib/Lmath.lua")--数学常量、数学函数、随机数系统
@@ -33,7 +34,7 @@ lstg.DoFile("lib/Lcolor.lua")--misc global functions
 ---行为帧动作(和游戏循环的帧更新分开)
 function DoFrame()
     --设置标题
-    lstg.SetTitle(string.format("%s | %.2f FPS | %d OBJ | %s", setting.mod, lstg.GetFPS(), lstg.GetnObj(), gconfig.window_title))
+    lstg.SetTitle(string.format("%s | %.2f FPS | %d OBJ | %s", setting.mod, lstg.GetFPS(), lstg.GetnObj(), "test"))
     --获取输入
     GetInput()
     --切关处理

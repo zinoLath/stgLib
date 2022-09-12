@@ -1,7 +1,4 @@
-local M = {}
-M.mt = {
-    __index = M
-}
+local M = class()
 local function loopTB(tb,id)
     while true do
         if id > #tb then
@@ -29,8 +26,7 @@ local sTypes = {
 ---     1,2,3,4,5,6,4,5,6,3,1,2
 --- the numbers basically mean the index of the image inside imgs
 --- mmmmaybe allow for real-numbered loops (like, 1.2 loops)
-function M.new(imgs,indices,interval)
-    local self = setmetatable({},M.mt)
+function M:new(imgs,indices,interval)
     self.imgs = imgs --the image list
     self.ids = indices --the indices
     self.interval = interval --frames between each anim
@@ -49,7 +45,7 @@ function M.newFromGroup(name,indices,interval)
             break
         end
     end
-    return M.new(ret,indices,interval)
+    return M(ret,indices,interval)
 end
 --when the animation is given to an object
 function M:init(manager,name)
@@ -86,35 +82,38 @@ function M:co(manager)
     end
     if is_segmented == sTypes.NO_LOOP then
         while lrcheck(manager) do
-            self.img = self.imgs[self.ids[int(math.lerp(1,#self.ids,math.clamp((manager.lr*way)/Lmax,0,1)))]]
+            local t = math.clamp((manager.lr*way)/Lmax,0,1)
+            self.img = self.imgs[self.ids[int(math.lerp(1,#self.ids),t)]]
             task.Wait(self.interval)
         end
     elseif is_segmented == sTypes.LOOP_BODY then
-        for i = 1, #self.ids[1] do
-            self.img = self.imgs[self.ids[loopTB(self.ids[1],i)]]
-            task.Wait(self.interval)
-        end
-        local id = 1
+        local i = 1
         while lrcheck(manager) do
-            self.img = self.imgs[loopTB(self.ids,id)]
-            id = id + 1
+            local t = math.clamp((manager.lr*way)/Lmax,0,1)
+            if t~=1 then
+                i = 1
+                self.img = self.imgs[self.ids[1][int(math.lerp(1,#self.ids[1],t))]]
+            else
+                self.img = self.imgs[loopTB(self.ids[2],i)]
+                i = i + 1
+            end
             task.Wait(self.interval)
         end
+        --[=[
     else
-        for i = 1, #self.ids[1] do
-            self.img = self.imgs[loopTB(self.ids[1],i)]
-            task.Wait(self.interval)
-        end
-        local id = 1
+        local i = 1
         while lrcheck(manager) do
-            id = id + 1
-            self.img = self.imgs[loopTB(self.ids[2],id)]
+            local t = math.clamp((manager.lr*way)/Lmax,0,1)
+            if t~=1 then
+                i = 1
+                self.img = self.imgs[self.ids[1][int(math.lerp(1,#self.ids[1],t))]]
+            else
+                self.img = self.imgs[loopTB(self.ids[2],i)]
+                i = i + 1
+            end
             task.Wait(self.interval)
         end
-        for i = 1, #self.ids[3] do
-            self.img = self.imgs[loopTB(self.ids[3],i)]
-            task.Wait(self.interval)
-        end
+        --]=]
     end
 end
 --the render function
